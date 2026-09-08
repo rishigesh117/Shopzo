@@ -30,6 +30,11 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Configure Android local.properties
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "sdk.dir=/usr/lib/android-sdk" >> android/local.properties
+
       - name: Get Flutter Dependencies
         run: flutter pub get
 
