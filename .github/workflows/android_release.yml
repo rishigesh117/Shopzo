@@ -29,6 +29,7 @@ jobs:
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
+        id: flutter
         with:
           channel: 'stable'
 
@@ -37,21 +38,17 @@ jobs:
 
       - name: Configure Android local.properties
         run: |
-          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "flutter.sdk=${{ steps.flutter.outputs.flutter-path }}" > android/local.properties
           echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
 
       - name: Get Flutter Dependencies
         run: flutter pub get
 
-      - name: Build Android APK via Gradle
-        run: |
-          cd android
-          ./gradlew assembleDebug --stacktrace
+      - name: Build Android APK
+        run: flutter build apk --debug --no-tree-shake-icons
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: shopzo-android-apk
-          path: |
-            build/app/outputs/flutter-apk/app-debug.apk
-            android/app/build/outputs/apk/debug/app-debug.apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
