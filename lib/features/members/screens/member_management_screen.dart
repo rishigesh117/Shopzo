@@ -321,6 +321,7 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> with Si
                             );
                           },
                         ),
+                ),
               ],
             ),
     );
