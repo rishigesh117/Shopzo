@@ -1,0 +1,19 @@
+PASS tests/e2e_verification.test.ts (5.461 s)
+  PHASE 4 REAL E2E SYSTEM SMOKE TEST
+    √ TEST 1 — AUTHENTICATION: Register, Login, JWT verification, and /api/auth/me (525 ms)
+    √ TEST 2 — SHOP: Create shop, unique Shop Code, creator becomes Owner (99 ms)
+    √ TEST 3 — EMPLOYEE JOIN: Enter Shop Code, send join request, Owner accepts, membership created (587 ms)
+    √ TEST 4 — OWNER INVITATION: Owner invites employee by phone with permissions, Employee accepts (488 ms)
+    √ TEST 5 — PERMISSIONS: Custom permissions allow bill creation, deny member management (123 ms)
+    √ TEST 6 & 7 — LOCAL -> CLOUD SYNC: Enqueue offline operations and push to backend PostgreSQL (700 ms)
+    √ TEST 8 — CLOUD -> LOCAL SYNC: Another device pulls server changes via GET /api/sync/pull (161 ms)
+    √ TEST 9 — DUPLICATE PROTECTION: Retry sync push payload; verify 0 duplicates created (117 ms)
+    √ TEST 10 — SHOP DATA ISOLATION: User from Shop A cannot access Shop B data (91 ms)
+    √ TEST 11 — CONFLICT RESOLUTION: Last-Write-Wins for product master data & audit preservation for financial records (356 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        5.714 s
+Ran all test suites matching /tests\\e2e_verification.test.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
