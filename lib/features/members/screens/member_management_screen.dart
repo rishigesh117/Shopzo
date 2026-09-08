@@ -218,7 +218,12 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> with Si
                 RefreshIndicator(
                   onRefresh: _loadMemberData,
                   child: _members.isEmpty
-                      ? const Center(child: Text('No active members found.'))
+                      ? ListView(
+                          children: const [
+                            SizedBox(height: 100),
+                            Center(child: Text('No active members found.')),
+                          ],
+                        )
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: _members.length,

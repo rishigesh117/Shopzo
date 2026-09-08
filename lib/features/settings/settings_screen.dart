@@ -328,7 +328,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                                   if (context.mounted) {
                                                     context.read<ProductProvider>().loadProducts();
                                                     context.read<CustomerProvider>().loadCustomers();
-                                                    context.read<BillingProvider>().loadBills();
+                                                    context.read<BillingProvider>().clearCart();
                                                     context.read<PaymentProvider>().loadPayments();
                                                     context.read<ReturnProvider>().loadReturns();
                                                     context.read<ReportProvider>().loadAllReports();
