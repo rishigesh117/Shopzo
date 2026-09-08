@@ -36,11 +36,6 @@ jobs:
       - name: Make Gradlew Executable
         run: chmod +x android/gradlew
 
-      - name: Configure Android local.properties
-        run: |
-          echo "flutter.sdk=${{ steps.flutter.outputs.flutter-path }}" > android/local.properties
-          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
-
       - name: Get Flutter Dependencies
         run: flutter pub get
 
