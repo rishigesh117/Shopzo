@@ -29,8 +29,8 @@ jobs:
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
-        id: flutter
         with:
+          flutter-version: '3.24.5'
           channel: 'stable'
 
       - name: Make Gradlew Executable
@@ -38,9 +38,8 @@ jobs:
 
       - name: Create Android local.properties
         run: |
-          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
-          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
-          cat android/local.properties
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          echo "flutter.sdk=$FLUTTER_ROOT" >> android/local.properties
 
       - name: Get Flutter Dependencies
         run: flutter pub get
