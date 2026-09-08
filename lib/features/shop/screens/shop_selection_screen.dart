@@ -277,7 +277,6 @@ class _ShopSelectionScreenState extends State<ShopSelectionScreen> {
                     if (_myShops.isEmpty)
                       Container(
                         padding: const EdgeInsets.all(32),
-                        textAlign: TextAlign.center,
                         decoration: BoxDecoration(
                           color: Colors.grey.shade100,
                           borderRadius: BorderRadius.circular(12),

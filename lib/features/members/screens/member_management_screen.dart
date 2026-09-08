@@ -271,7 +271,12 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> with Si
                 RefreshIndicator(
                   onRefresh: _loadMemberData,
                   child: _requests.where((r) => r['status'] == 'PENDING').isEmpty
-                      ? const Center(child: Text('No pending join requests.'))
+                      ? ListView(
+                          children: const [
+                            SizedBox(height: 100),
+                            Center(child: Text('No pending join requests.')),
+                          ],
+                        )
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
                           itemCount: _requests.length,

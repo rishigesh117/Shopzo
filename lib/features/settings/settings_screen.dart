@@ -1,8 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/shop_provider.dart';
 import '../../core/providers/theme_provider.dart';
+import '../../core/providers/product_provider.dart';
+import '../../core/providers/customer_provider.dart';
+import '../../core/providers/billing_provider.dart';
+import '../../core/providers/payment_provider.dart';
+import '../../core/providers/return_provider.dart';
+import '../../core/providers/report_provider.dart';
+import '../../core/services/backup_service.dart';
 import '../../core/theme/shopzo_colors.dart';
 import '../../core/theme/shopzo_typography.dart';
 import '../../core/widgets/shopzo_card.dart';
@@ -279,11 +287,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         itemCount: files.length,
                                         itemBuilder: (context, index) {
                                           final file = files[index];
-                                          final fileName = file.path.split(Platform.pathSeparator).last;
+                                          final fileName = file.toString().split(RegExp(r'[/\\]')).last;
                                           return ListTile(
                                             leading: const Icon(Icons.description_outlined),
                                             title: Text(fileName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                                            subtitle: Text('Size: ${file.lengthSync()} bytes'),
+                                            subtitle: const Text('Local Backup File'),
                                             onTap: () async {
                                               Navigator.pop(ctx);
                                               // Confirm Safety Modal

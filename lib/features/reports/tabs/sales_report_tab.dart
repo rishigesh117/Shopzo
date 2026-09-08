@@ -61,11 +61,11 @@ class SalesReportTab extends StatelessWidget {
                 children: [
                   Text(
                     '${sales.billCount} Bills Generated',
-                    style: const TextStyle(color: Colors.white90, fontSize: 13),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                   Text(
                     '${sales.productsSoldCount.toStringAsFixed(1)} Items Sold',
-                    style: const TextStyle(color: Colors.white90, fontSize: 13),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),

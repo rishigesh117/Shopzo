@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/report_provider.dart';
-import '../../core/services/report_service.dart';
+import '../../core/services/report_service.dart' hide DateTimeRange;
 import 'tabs/sales_report_tab.dart';
 import 'tabs/profit_report_tab.dart';
 import 'tabs/stock_report_tab.dart';
