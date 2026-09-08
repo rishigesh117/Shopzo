@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 class ApiResponse {
   final bool success;
@@ -77,26 +77,37 @@ class ApiService {
         uri = uri.replace(queryParameters: queryParams);
       }
 
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 5);
-      final request = await client.openUrl(method, uri);
-
-      request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
       if (_authToken != null && _authToken!.isNotEmpty) {
-        request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_authToken');
+        headers['Authorization'] = 'Bearer $_authToken';
       }
       if (_activeShopId != null && _activeShopId!.isNotEmpty) {
-        request.headers.set('x-shop-id', _activeShopId!);
+        headers['x-shop-id'] = _activeShopId!;
       }
 
-      if (body != null) {
-        final jsonString = jsonEncode(body);
-        request.write(jsonString);
+      http.Response response;
+      final bodyString = body != null ? jsonEncode(body) : null;
+
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 5));
+          break;
+        case 'POST':
+          response = await http.post(uri, headers: headers, body: bodyString).timeout(const Duration(seconds: 5));
+          break;
+        case 'PUT':
+          response = await http.put(uri, headers: headers, body: bodyString).timeout(const Duration(seconds: 5));
+          break;
+        case 'DELETE':
+          response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 5));
+          break;
+        default:
+          throw UnsupportedError('HTTP method $method not supported');
       }
 
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-      client.close();
+      final responseBody = response.body;
 
       Map<String, dynamic> jsonMap = {};
       if (responseBody.isNotEmpty) {

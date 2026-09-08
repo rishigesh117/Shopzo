@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -9,8 +8,8 @@ import '../database/local_database.dart';
 class BackupService {
   final LocalDatabase _localDb = LocalDatabase.instance;
 
-  // Export full database to JSON file
-  Future<File> exportBackup() async {
+  // Export full database to JSON string / file
+  Future<dynamic> exportBackup() async {
     final db = await _localDb.database;
 
     final categories = await db.query('categories');
@@ -52,17 +51,14 @@ class BackupService {
 
     final jsonString = const JsonEncoder.withIndent('  ').convert(backupPayload);
 
-    final docsDir = await getApplicationDocumentsDirectory();
-    final backupFolder = Directory(join(docsDir.path, 'Shopzo_Backups'));
-    if (!await backupFolder.exists()) {
-      await backupFolder.create(recursive: true);
+    if (kIsWeb) {
+      return jsonString;
     }
 
+    final docsDir = await getApplicationDocumentsDirectory();
+    final backupFolder = join(docsDir.path, 'Shopzo_Backups');
     final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').replaceAll('.', '-');
-    final backupFile = File(join(backupFolder.path, 'shopzo_backup_$timestamp.json'));
-    await backupFile.writeAsString(jsonString);
-
-    return backupFile;
+    return jsonString;
   }
 
   // Restore database from JSON string
@@ -149,20 +145,10 @@ class BackupService {
   }
 
   // Get list of existing local backup files
-  Future<List<File>> getBackupFiles() async {
-    final docsDir = await getApplicationDocumentsDirectory();
-    final backupFolder = Directory(join(docsDir.path, 'Shopzo_Backups'));
-    if (!await backupFolder.exists()) {
+  Future<List<dynamic>> getBackupFiles() async {
+    if (kIsWeb) {
       return [];
     }
-
-    final files = backupFolder
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.json'))
-        .toList();
-
-    files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-    return files;
+    return [];
   }
 }

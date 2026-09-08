@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 class LocalDatabase {
   static final LocalDatabase instance = LocalDatabase._init();
@@ -18,16 +18,14 @@ class LocalDatabase {
   }
 
   Future<Database> _initDB(String filePath) async {
-    // Initialize FFI for Windows / Desktop
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
-
     String path;
     if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
       path = filePath;
     } else {
+      // Initialize FFI for Windows / Desktop
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
       final dbFolder = await getApplicationDocumentsDirectory();
       path = join(dbFolder.path, filePath);
     }
