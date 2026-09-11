@@ -1,0 +1,46 @@
+package com.shopzo.app.navigation
+
+/**
+ * All navigation routes for SHOPZO.
+ */
+object Routes {
+    const val LOGIN = "login"
+    const val REGISTER = "register"
+    const val CREATE_SHOP = "create_shop"
+    const val DASHBOARD = "dashboard"
+    const val PRODUCTS = "products"
+    const val ADD_PRODUCT = "add_product"
+    const val EDIT_PRODUCT = "edit_product/{productId}"
+    const val PRODUCT_DETAIL = "product_detail/{productId}"
+    const val CATEGORIES = "categories"
+    const val RESTOCK = "restock/{productId}"
+    const val STOCK_ADJUSTMENT = "stock_adjustment/{productId}"
+    const val STOCK_HISTORY = "stock_history/{productId}"
+    const val STAFF_LIST = "staff_list"
+    const val ADD_STAFF = "add_staff"
+    const val EDIT_STAFF = "edit_staff/{userId}"
+    const val STAFF_PERMISSIONS = "staff_permissions/{userId}"
+    const val NEW_BILL = "new_bill"
+    const val BILLS = "bills"
+    const val BILL_DETAIL = "bill_detail/{billId}"
+    const val RECEIPT = "receipt/{billId}"
+    const val CUSTOMERS = "customers"
+    const val CUSTOMER_DETAIL = "customer_detail/{customerId}"
+    const val PAYMENTS = "payments"
+    const val RETURNS = "returns"
+    const val REPORTS = "reports"
+    const val SETTINGS = "settings"
+    const val MORE = "more"
+    const val SHOP_SETTINGS = "shop_settings"
+
+    fun editProduct(productId: String) = "edit_product/$productId"
+    fun productDetail(productId: String) = "product_detail/$productId"
+    fun restock(productId: String) = "restock/$productId"
+    fun stockAdjustment(productId: String) = "stock_adjustment/$productId"
+    fun stockHistory(productId: String) = "stock_history/$productId"
+    fun editStaff(userId: String) = "edit_staff/$userId"
+    fun staffPermissions(userId: String) = "staff_permissions/$userId"
+    fun billDetail(billId: String) = "bill_detail/$billId"
+    fun receipt(billId: String) = "receipt/$billId"
+    fun customerDetail(customerId: String) = "customer_detail/$customerId"
+}
