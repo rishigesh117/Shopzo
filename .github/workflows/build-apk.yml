@@ -35,6 +35,7 @@ jobs:
         run: |
           sed -i 's/\r$//' gradlew
           chmod +x gradlew
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon --stacktrace
