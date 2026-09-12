@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-    private const val DEFAULT_BASE_URL = "http://10.0.2.2:3000/" // Android Emulator localhost
+    private const val DEFAULT_BASE_URL = "https://shopzo-nine.vercel.app/"
 
     private val json = Json {
         ignoreUnknownKeys = true

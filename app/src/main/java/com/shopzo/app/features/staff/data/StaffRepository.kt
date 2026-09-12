@@ -6,13 +6,16 @@ import com.shopzo.app.core.database.entity.StaffPermissionEntity
 import com.shopzo.app.core.database.entity.UserEntity
 import com.shopzo.app.core.model.Permission
 import com.shopzo.app.core.model.UserRole
+import com.shopzo.app.core.network.ShopzoApiService
+import com.shopzo.app.core.network.dto.AddStaffRequest
 import com.shopzo.app.core.security.PasswordHasher
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 class StaffRepository(
     private val userDao: UserDao,
-    private val staffPermissionDao: StaffPermissionDao
+    private val staffPermissionDao: StaffPermissionDao,
+    private val apiService: ShopzoApiService? = null
 ) {
 
     sealed class StaffResult {
@@ -27,15 +30,38 @@ class StaffRepository(
         permissions: Set<Permission>,
         shopId: String
     ): StaffResult {
-        if (userDao.countByMobile(mobileNumber) > 0) {
+        val cleanMobile = mobileNumber.trim()
+        val cleanName = name.trim()
+
+        if (userDao.countByMobile(cleanMobile) > 0) {
             return StaffResult.Error("This mobile number is already registered.")
+        }
+
+        // Also register staff in backend so staff can immediately log in from their own device
+        if (apiService != null) {
+            try {
+                val res = apiService.addStaff(
+                    shopId = shopId,
+                    request = AddStaffRequest(
+                        name = cleanName,
+                        mobileNumber = cleanMobile,
+                        password = password,
+                        permissions = permissions.map { it.name }
+                    )
+                )
+                if (res.code() == 409) {
+                    return StaffResult.Error("Staff member already registered with this mobile number.")
+                }
+            } catch (_: Exception) {
+                // Offline fallback
+            }
         }
 
         val userId = UUID.randomUUID().toString()
         val user = UserEntity(
             id = userId,
-            name = name.trim(),
-            mobileNumber = mobileNumber.trim(),
+            name = cleanName,
+            mobileNumber = cleanMobile,
             passwordHash = PasswordHasher.hash(password),
             role = UserRole.STAFF.name,
             shopId = shopId,

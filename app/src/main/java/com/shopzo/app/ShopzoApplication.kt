@@ -78,9 +78,26 @@ class ShopzoApplication : Application() {
             isNetworkAvailable = { checkNetworkAvailable() }
         )
 
-        authRepository = AuthRepository(database.userDao())
-        shopRepository = ShopRepository(database.shopDao(), database.userDao(), database.categoryDao())
-        staffRepository = StaffRepository(database.userDao(), database.staffPermissionDao())
+        authRepository = AuthRepository(
+            userDao = database.userDao(),
+            apiService = apiService,
+            sessionManager = sessionManager,
+            shopDao = database.shopDao(),
+            syncRepository = syncRepository
+        )
+        shopRepository = ShopRepository(
+            shopDao = database.shopDao(),
+            userDao = database.userDao(),
+            categoryDao = database.categoryDao(),
+            apiService = apiService,
+            sessionManager = sessionManager,
+            syncRepository = syncRepository
+        )
+        staffRepository = StaffRepository(
+            userDao = database.userDao(),
+            staffPermissionDao = database.staffPermissionDao(),
+            apiService = apiService
+        )
         productRepository = ProductRepository(database)
         stockRepository = StockRepository(database)
         customerRepository = CustomerRepository(database)

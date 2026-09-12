@@ -32,6 +32,17 @@ class SyncManager(
     private val _syncStatus = MutableStateFlow(SyncStatusInfo())
     val syncStatus: StateFlow<SyncStatusInfo> = _syncStatus.asStateFlow()
 
+    init {
+        scope.launch {
+            while (isActive) {
+                delay(15_000)
+                try {
+                    syncNow()
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
     fun syncNow() {
         val shopId = getCurrentShopId() ?: return
         if (!isNetworkAvailable()) {
