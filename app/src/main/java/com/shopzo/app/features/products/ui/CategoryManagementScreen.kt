@@ -50,8 +50,8 @@ fun CategoryManagementScreen(
                         singleLine = true,
                         shape = MaterialTheme.shapes.medium
                     )
-                    if (viewModel.categoryError != null) {
-                        Text(viewModel.categoryError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    viewModel.categoryError?.let { err ->
+                        Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -85,12 +85,13 @@ fun CategoryManagementScreen(
     }
 
     // Delete confirm
-    if (deleteCategoryId != null) {
+    val currentDeleteCatId = deleteCategoryId
+    if (currentDeleteCatId != null) {
         AlertDialog(
             onDismissRequest = { deleteCategoryId = null; deleteError = null },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteCategory(deleteCategoryId!!) { success ->
+                    viewModel.deleteCategory(currentDeleteCatId) { success ->
                         if (success) { deleteCategoryId = null; deleteError = null }
                         else { deleteError = "Cannot delete: category has active products." }
                     }
@@ -101,9 +102,9 @@ fun CategoryManagementScreen(
             text = {
                 Column {
                     Text("Are you sure you want to delete this category?")
-                    if (deleteError != null) {
+                    deleteError?.let { err ->
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(deleteError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

@@ -75,14 +75,18 @@ fun AddStaffScreen(
 
             OutlinedTextField(
                 value = viewModel.staffMobile,
-                onValueChange = { viewModel.staffMobile = it; viewModel.clearError() },
+                onValueChange = {
+                    viewModel.staffMobile = com.shopzo.app.core.utils.ValidationUtils.filterMobileNumber(it)
+                    viewModel.clearError()
+                },
                 label = { Text("Staff Mobile Number") },
                 leadingIcon = { Icon(Icons.Filled.Phone, null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
+                supportingText = { Text("${viewModel.staffMobile.length}/10 digits") }
             )
 
             Spacer(modifier = Modifier.height(12.dp))

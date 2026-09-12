@@ -30,12 +30,14 @@ fun StaffListScreen(
     val staffList by viewModel.staffList.collectAsState()
     var deleteUserId by remember { mutableStateOf<String?>(null) }
 
-    if (deleteUserId != null) {
+    val currentDeleteId = deleteUserId
+    if (currentDeleteId != null) {
         AlertDialog(
             onDismissRequest = { deleteUserId = null },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteStaff(deleteUserId!!) { deleteUserId = null }
+                    deleteUserId = null
+                    viewModel.deleteStaff(currentDeleteId) {}
                 }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {

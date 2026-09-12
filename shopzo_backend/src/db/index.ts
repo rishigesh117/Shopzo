@@ -5,11 +5,14 @@ dotenv.config();
 
 const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/shopzo';
 
+const isCloudDb = !!process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost') && !process.env.DATABASE_URL.includes('127.0.0.1');
+
 export const pool = new Pool({
   connectionString,
+  ssl: isCloudDb ? { rejectUnauthorized: false } : undefined,
   max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
 });
 
 // In-Memory Database Store for robust testing and offline/isolated test execution

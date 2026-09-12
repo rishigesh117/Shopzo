@@ -98,6 +98,65 @@ class CustomerViewModel(
         }
     }
 
+    fun updateCustomer(
+        customer: CustomerEntity,
+        name: String,
+        mobileNumber: String,
+        address: String?,
+        onSuccess: (CustomerEntity) -> Unit
+    ) {
+        val trimmedName = name.trim()
+        val trimmedMobile = mobileNumber.trim()
+        val nameErr = com.shopzo.app.core.utils.ValidationUtils.validateName(trimmedName, "Customer name")
+        if (nameErr != null) {
+            _uiState.update { it.copy(errorMessage = nameErr) }
+            return
+        }
+        val mobileErr = com.shopzo.app.core.utils.ValidationUtils.validateMobileNumber(trimmedMobile)
+        if (mobileErr != null) {
+            _uiState.update { it.copy(errorMessage = mobileErr) }
+            return
+        }
+
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        viewModelScope.launch {
+            val updated = customer.copy(
+                name = trimmedName,
+                mobileNumber = trimmedMobile,
+                address = address?.trim()?.ifEmpty { null }
+            )
+            val result = customerRepository.updateCustomer(updated)
+            result.fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isLoading = false, successMessage = "Customer updated successfully.") }
+                    onSuccess(updated)
+                },
+                onFailure = { err ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = err.message ?: "Failed to update customer.") }
+                }
+            )
+        }
+    }
+
+    fun deleteCustomer(
+        customerId: String,
+        onSuccess: () -> Unit
+    ) {
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        viewModelScope.launch {
+            val result = customerRepository.deleteCustomer(customerId)
+            result.fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isLoading = false, successMessage = "Customer deleted successfully.") }
+                    onSuccess()
+                },
+                onFailure = { err ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = err.message ?: "Failed to delete customer.") }
+                }
+            )
+        }
+    }
+
     fun clearMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }

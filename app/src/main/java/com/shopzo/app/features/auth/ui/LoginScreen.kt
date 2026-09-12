@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.shopzo.app.core.utils.ValidationUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,48 +35,38 @@ fun LoginScreen(
     onNavigateToDashboard: () -> Unit,
     onNavigateToCreateShop: () -> Unit
 ) {
-    var passwordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    var passwordVisible by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Spacer(modifier = Modifier.height(60.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
-        // Logo / Branding
+        // App Logo / Title
         Icon(
             imageVector = Icons.Outlined.Storefront,
             contentDescription = "Shopzo Logo",
-            modifier = Modifier.size(72.dp),
+            modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary
         )
-        Spacer(modifier = Modifier.height(12.dp))
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
             text = "SHOPZO",
-            style = MaterialTheme.typography.displayMedium,
+            style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
-        Text(
-            text = "Simple. Smart. Sell.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(48.dp))
 
         Text(
-            text = "Welcome Back",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Sign in to manage your shop",
+            text = "Offline-First Billing & Inventory",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -85,7 +76,10 @@ fun LoginScreen(
         // Mobile Number
         OutlinedTextField(
             value = viewModel.mobileNumber,
-            onValueChange = { viewModel.mobileNumber = it; viewModel.clearError() },
+            onValueChange = {
+                viewModel.mobileNumber = ValidationUtils.filterMobileNumber(it)
+                viewModel.clearError()
+            },
             label = { Text("Mobile Number") },
             leadingIcon = { Icon(Icons.Filled.Phone, contentDescription = null) },
             singleLine = true,
@@ -97,7 +91,8 @@ fun LoginScreen(
                 onNext = { focusManager.moveFocus(FocusDirection.Down) }
             ),
             modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.medium
+            shape = MaterialTheme.shapes.medium,
+            supportingText = { Text("${viewModel.mobileNumber.length}/10 digits") }
         )
 
         Spacer(modifier = Modifier.height(16.dp))

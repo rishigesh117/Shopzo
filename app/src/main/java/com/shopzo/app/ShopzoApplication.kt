@@ -62,6 +62,7 @@ class ShopzoApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        com.shopzo.app.core.crash.CrashHandler.install(this)
         database = ShopzoDatabase.getInstance(this)
         sessionManager = SessionManager(this)
 

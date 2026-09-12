@@ -11,6 +11,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +39,8 @@ fun CustomerListScreen(
     val totalDues by viewModel.totalOutstandingDues.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var customerToEdit by remember { mutableStateOf<CustomerEntity?>(null) }
+    var customerToDelete by remember { mutableStateOf<CustomerEntity?>(null) }
 
     Scaffold(
         topBar = {
@@ -128,7 +133,9 @@ fun CustomerListScreen(
                     items(customers, key = { it.id }) { customer ->
                         CustomerCard(
                             customer = customer,
-                            onClick = { onNavigateToCustomerDetail(customer.id) }
+                            onClick = { onNavigateToCustomerDetail(customer.id) },
+                            onEdit = { customerToEdit = customer },
+                            onDelete = { customerToDelete = customer }
                         )
                     }
                 }
@@ -142,13 +149,50 @@ fun CustomerListScreen(
             onDismiss = { showAddDialog = false }
         )
     }
+
+    customerToEdit?.let { cust ->
+        EditCustomerDialog(
+            customer = cust,
+            viewModel = viewModel,
+            onDismiss = { customerToEdit = null },
+            onCustomerUpdated = { customerToEdit = null }
+        )
+    }
+
+    customerToDelete?.let { cust ->
+        AlertDialog(
+            onDismissRequest = { customerToDelete = null },
+            title = { Text("Delete Customer") },
+            text = { Text("Are you sure you want to delete ${cust.name} (${cust.mobileNumber})? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val id = cust.id
+                        customerToDelete = null
+                        viewModel.deleteCustomer(id) {}
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { customerToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
 fun CustomerCard(
     customer: CustomerEntity,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -179,7 +223,7 @@ fun CustomerCard(
                 )
             }
 
-            Column(horizontalAlignment = Alignment.End) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 if (customer.outstandingDuePaise > 0) {
                     Surface(
                         color = StockRed.copy(alpha = 0.15f),
@@ -206,6 +250,42 @@ fun CustomerCard(
                             fontWeight = FontWeight.Bold,
                             color = Teal700,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Box {
+                    IconButton(
+                        onClick = { menuExpanded = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Options",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Edit Customer") },
+                            leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                            onClick = {
+                                menuExpanded = false
+                                onEdit()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete Customer", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                            onClick = {
+                                menuExpanded = false
+                                onDelete()
+                            }
                         )
                     }
                 }

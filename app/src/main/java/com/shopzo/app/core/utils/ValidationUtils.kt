@@ -13,6 +13,10 @@ object ValidationUtils {
         return null
     }
 
+    fun filterMobileNumber(mobile: String): String {
+        return mobile.filter { it.isDigit() }.take(10)
+    }
+
     fun validatePassword(password: String): String? {
         if (password.isEmpty()) return "Password is required."
         if (password.length < 4) return "Password must be at least 4 characters."

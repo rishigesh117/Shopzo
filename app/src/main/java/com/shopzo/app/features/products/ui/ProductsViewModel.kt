@@ -158,7 +158,8 @@ class ProductsViewModel(
                 resetForm()
                 onSuccess()
             } catch (e: Exception) {
-                errorMessage = "Failed to save product."
+                e.printStackTrace()
+                errorMessage = e.localizedMessage?.takeIf { it.isNotBlank() } ?: "Failed to save product."
                 isLoading = false
             }
         }
@@ -166,8 +167,13 @@ class ProductsViewModel(
 
     fun deleteProduct(productId: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            productRepository.deleteProduct(productId)
-            onSuccess()
+            try {
+                productRepository.deleteProduct(productId)
+                onSuccess()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = e.localizedMessage ?: "Failed to delete product"
+            }
         }
     }
 
@@ -177,23 +183,38 @@ class ProductsViewModel(
         if (error != null) { categoryError = error; return }
         categoryError = null
         viewModelScope.launch {
-            productRepository.addCategory(newCategoryName, _shopId.value)
-            newCategoryName = ""
-            onSuccess()
+            try {
+                productRepository.addCategory(newCategoryName, _shopId.value)
+                newCategoryName = ""
+                onSuccess()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                categoryError = e.localizedMessage ?: "Failed to add category"
+            }
         }
     }
 
     fun renameCategory(category: CategoryEntity, newName: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            productRepository.updateCategory(category.copy(name = newName.trim()))
-            onSuccess()
+            try {
+                productRepository.updateCategory(category.copy(name = newName.trim()))
+                onSuccess()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                categoryError = e.localizedMessage ?: "Failed to rename category"
+            }
         }
     }
 
     fun deleteCategory(categoryId: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val result = productRepository.deleteCategory(categoryId)
-            onResult(result)
+            try {
+                val result = productRepository.deleteCategory(categoryId)
+                onResult(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onResult(false)
+            }
         }
     }
 

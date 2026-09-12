@@ -42,7 +42,8 @@ fun ProductDetailScreen(
             onDismissRequest = { showDeleteDialog = false },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteProduct(productId) { showDeleteDialog = false; onNavigateBack() }
+                    showDeleteDialog = false
+                    viewModel.deleteProduct(productId) { onNavigateBack() }
                 }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } },
@@ -71,7 +72,18 @@ fun ProductDetailScreen(
             )
         }
     ) { padding ->
-        product?.let { p ->
+        val currentProduct = product
+        if (currentProduct == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            val p = currentProduct
             val status = getStockStatus(p.quantity, p.minStockLevel)
             val categoryName = categories.find { it.id == p.categoryId }?.name ?: "Unknown"
             val unitName = try { ProductUnit.valueOf(p.unit).displayName } catch (_: Exception) { p.unit }

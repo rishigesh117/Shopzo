@@ -3,11 +3,13 @@ package com.shopzo.app.core.database.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * Represents a single line item within a bill.
  * Stores historical buyingPricePaise at time of sale for accurate profit calculations.
  */
+@Serializable
 @Entity(
     tableName = "bill_items",
     indices = [

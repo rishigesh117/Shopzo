@@ -86,6 +86,15 @@ fun ShopzoNavGraph() {
     var userName by remember { mutableStateOf("") }
     var shopId by remember { mutableStateOf("") }
 
+    fun safePopBack(fallbackRoute: String = Routes.DASHBOARD) {
+        if (!navController.popBackStack()) {
+            navController.navigate(fallbackRoute) {
+                popUpTo(Routes.DASHBOARD) { saveState = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         app.sessionManager.sessionFlow.collect { session ->
             userName = session?.userName ?: ""
@@ -136,7 +145,7 @@ fun ShopzoNavGraph() {
                 val vm: AuthViewModel = viewModel(factory = AuthViewModel.Factory(app.authRepository, app.shopRepository, app.sessionManager))
                 RegisterScreen(
                     viewModel = vm,
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { safePopBack(Routes.LOGIN) },
                     onNavigateToCreateShop = { navController.navigate(Routes.CREATE_SHOP) { popUpTo(0) { inclusive = true } } }
                 )
             }
@@ -168,7 +177,7 @@ fun ShopzoNavGraph() {
                 NewBillScreen(
                     viewModel = posVm,
                     customerViewModel = customerVm,
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { safePopBack(Routes.DASHBOARD) },
                     onNavigateToBillDetail = { billId ->
                         navController.navigate(Routes.billDetail(billId)) {
                             popUpTo(Routes.NEW_BILL) { inclusive = true }
@@ -197,7 +206,7 @@ fun ShopzoNavGraph() {
                     viewModel = billsVm,
                     paymentViewModel = paymentVm,
                     returnsViewModel = returnsVm,
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { safePopBack(Routes.BILLS) },
                     onNavigateToReceipt = { id -> navController.navigate(Routes.receipt(id)) }
                 )
             }
@@ -210,7 +219,7 @@ fun ShopzoNavGraph() {
                 ReceiptScreen(
                     billId = billId,
                     viewModel = billsVm,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { safePopBack(Routes.BILLS) }
                 )
             }
 
@@ -232,7 +241,7 @@ fun ShopzoNavGraph() {
                     customerId = customerId,
                     viewModel = customerVm,
                     paymentViewModel = paymentVm,
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { safePopBack(Routes.CUSTOMERS) },
                     onNavigateToBillDetail = { billId -> navController.navigate(Routes.billDetail(billId)) }
                 )
             }
@@ -241,7 +250,7 @@ fun ShopzoNavGraph() {
                 val returnsVm: ReturnsViewModel = viewModel(factory = ReturnsViewModel.Factory(app.returnRepository, app.sessionManager))
                 ReturnsScreen(
                     viewModel = returnsVm,
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { safePopBack(Routes.DASHBOARD) },
                     onNavigateToBillDetail = { billId -> navController.navigate(Routes.billDetail(billId)) }
                 )
             }
@@ -249,7 +258,7 @@ fun ShopzoNavGraph() {
                 val reportsVm: ReportsViewModel = viewModel(factory = ReportsViewModel.Factory(app.reportRepository, app.customerRepository, app.sessionManager))
                 ReportsScreen(
                     viewModel = reportsVm,
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { safePopBack(Routes.DASHBOARD) },
                     onNavigateToCustomerDetail = { customerId -> navController.navigate(Routes.customerDetail(customerId)) }
                 )
             }
@@ -279,7 +288,7 @@ fun ShopzoNavGraph() {
             // Products
             composable(Routes.ADD_PRODUCT) {
                 val vm: ProductsViewModel = viewModel(factory = ProductsViewModel.Factory(app.productRepository, app.sessionManager))
-                AddEditProductScreen(viewModel = vm, productId = null, onNavigateBack = { navController.popBackStack() })
+                AddEditProductScreen(viewModel = vm, productId = null, onNavigateBack = { safePopBack(Routes.PRODUCTS) })
             }
             composable(
                 Routes.EDIT_PRODUCT,
@@ -287,7 +296,7 @@ fun ShopzoNavGraph() {
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getString("productId") ?: return@composable
                 val vm: ProductsViewModel = viewModel(factory = ProductsViewModel.Factory(app.productRepository, app.sessionManager))
-                AddEditProductScreen(viewModel = vm, productId = productId, onNavigateBack = { navController.popBackStack() })
+                AddEditProductScreen(viewModel = vm, productId = productId, onNavigateBack = { safePopBack(Routes.PRODUCTS) })
             }
             composable(
                 Routes.PRODUCT_DETAIL,
@@ -299,7 +308,7 @@ fun ShopzoNavGraph() {
                     productId = productId,
                     viewModel = vm,
                     productRepository = app.productRepository,
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { safePopBack(Routes.PRODUCTS) },
                     onNavigateToEdit = { navController.navigate(Routes.editProduct(it)) },
                     onNavigateToRestock = { navController.navigate(Routes.restock(it)) },
                     onNavigateToAdjust = { navController.navigate(Routes.stockAdjustment(it)) },
@@ -308,7 +317,7 @@ fun ShopzoNavGraph() {
             }
             composable(Routes.CATEGORIES) {
                 val vm: ProductsViewModel = viewModel(factory = ProductsViewModel.Factory(app.productRepository, app.sessionManager))
-                CategoryManagementScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                CategoryManagementScreen(viewModel = vm, onNavigateBack = { safePopBack(Routes.MORE) })
             }
 
             // Stock
@@ -318,7 +327,7 @@ fun ShopzoNavGraph() {
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getString("productId") ?: return@composable
                 val vm: StockViewModel = viewModel(factory = StockViewModel.Factory(app.stockRepository, app.sessionManager))
-                RestockScreen(productId = productId, viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                RestockScreen(productId = productId, viewModel = vm, onNavigateBack = { safePopBack(Routes.PRODUCTS) })
             }
             composable(
                 Routes.STOCK_ADJUSTMENT,
@@ -326,7 +335,7 @@ fun ShopzoNavGraph() {
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getString("productId") ?: return@composable
                 val vm: StockViewModel = viewModel(factory = StockViewModel.Factory(app.stockRepository, app.sessionManager))
-                StockAdjustmentScreen(productId = productId, viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                StockAdjustmentScreen(productId = productId, viewModel = vm, onNavigateBack = { safePopBack(Routes.PRODUCTS) })
             }
             composable(
                 Routes.STOCK_HISTORY,
@@ -334,7 +343,7 @@ fun ShopzoNavGraph() {
             ) { backStackEntry ->
                 val productId = backStackEntry.arguments?.getString("productId") ?: return@composable
                 val vm: StockViewModel = viewModel(factory = StockViewModel.Factory(app.stockRepository, app.sessionManager))
-                StockHistoryScreen(productId = productId, viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                StockHistoryScreen(productId = productId, viewModel = vm, onNavigateBack = { safePopBack(Routes.PRODUCTS) })
             }
 
             // Staff
@@ -342,14 +351,14 @@ fun ShopzoNavGraph() {
                 val vm: StaffViewModel = viewModel(factory = StaffViewModel.Factory(app.staffRepository, app.sessionManager))
                 StaffListScreen(
                     viewModel = vm,
-                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateBack = { safePopBack(Routes.MORE) },
                     onNavigateToAddStaff = { navController.navigate(Routes.ADD_STAFF) },
                     onNavigateToPermissions = { navController.navigate(Routes.staffPermissions(it)) }
                 )
             }
             composable(Routes.ADD_STAFF) {
                 val vm: StaffViewModel = viewModel(factory = StaffViewModel.Factory(app.staffRepository, app.sessionManager))
-                AddStaffScreen(viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                AddStaffScreen(viewModel = vm, onNavigateBack = { safePopBack(Routes.STAFF_LIST) })
             }
             composable(
                 Routes.STAFF_PERMISSIONS,
@@ -357,7 +366,7 @@ fun ShopzoNavGraph() {
             ) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
                 val vm: StaffViewModel = viewModel(factory = StaffViewModel.Factory(app.staffRepository, app.sessionManager))
-                StaffPermissionsScreen(userId = userId, viewModel = vm, onNavigateBack = { navController.popBackStack() })
+                StaffPermissionsScreen(userId = userId, viewModel = vm, onNavigateBack = { safePopBack(Routes.STAFF_LIST) })
             }
 
             // Shop Settings
@@ -370,7 +379,7 @@ fun ShopzoNavGraph() {
                     shopRepository = app.shopRepository,
                     syncManager = app.syncManager,
                     backupViewModel = backupVm,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { safePopBack(Routes.MORE) }
                 )
             }
         }

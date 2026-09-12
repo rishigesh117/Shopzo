@@ -21,6 +21,14 @@ class ValidationUtilsTest {
     }
 
     @Test
+    fun filterMobileNumber_filtersNonDigitsAndCapsAt10() {
+        org.junit.Assert.assertEquals("9876543210", ValidationUtils.filterMobileNumber("9876543210"))
+        org.junit.Assert.assertEquals("9876543210", ValidationUtils.filterMobileNumber("98765432109999"))
+        org.junit.Assert.assertEquals("9876543210", ValidationUtils.filterMobileNumber("98765-43210"))
+        org.junit.Assert.assertEquals("123", ValidationUtils.filterMobileNumber("a1b2c3"))
+    }
+
+    @Test
     fun validatePassword_lengthChecks() {
         assertNull(ValidationUtils.validatePassword("1234"))
         assertNull(ValidationUtils.validatePassword("securePass123"))

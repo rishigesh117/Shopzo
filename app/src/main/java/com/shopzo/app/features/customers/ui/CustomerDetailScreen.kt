@@ -5,11 +5,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,6 +45,8 @@ fun CustomerDetailScreen(
     val payments by viewModel.getCustomerPayments(customerId).collectAsState(initial = emptyList())
 
     var showRecordPaymentDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) } // 0 = Bills, 1 = Payments
 
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()) }
@@ -53,18 +57,29 @@ fun CustomerDetailScreen(
                 title = { Text(customer?.name ?: "Customer Profile", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (customer != null) {
+                        IconButton(onClick = { showEditDialog = true }) {
+                            Icon(Icons.Outlined.Edit, contentDescription = "Edit Customer")
+                        }
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.Outlined.Delete, contentDescription = "Delete Customer", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             )
         }
     ) { padding ->
-        if (customer == null) {
+        val currentCustomer = customer
+        if (currentCustomer == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
-            val cust = customer!!
+            val cust = currentCustomer
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -191,5 +206,40 @@ fun CustomerDetailScreen(
             viewModel = paymentViewModel,
             onDismiss = { showRecordPaymentDialog = false }
         )
+    }
+
+    customer?.let { currentCustomer ->
+        if (showEditDialog) {
+            EditCustomerDialog(
+                customer = currentCustomer,
+                viewModel = viewModel,
+                onDismiss = { showEditDialog = false }
+            )
+        }
+
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Delete Customer") },
+                text = { Text("Are you sure you want to delete ${currentCustomer.name} (${currentCustomer.mobileNumber})? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                            viewModel.deleteCustomer(currentCustomer.id) {
+                                onNavigateBack()
+                            }
+                        }
+                    ) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
 }

@@ -77,34 +77,44 @@ class StaffViewModel(
         isLoading = true
         errorMessage = null
         viewModelScope.launch {
-            val result = staffRepository.createStaff(
-                name = staffName,
-                mobileNumber = staffMobile,
-                password = staffPassword,
-                permissions = selectedPermissions,
-                shopId = _shopId.value
-            )
-            when (result) {
-                is StaffRepository.StaffResult.Success -> {
-                    isLoading = false
-                    resetForm()
-                    onSuccess()
+            try {
+                val result = staffRepository.createStaff(
+                    name = staffName,
+                    mobileNumber = staffMobile,
+                    password = staffPassword,
+                    permissions = selectedPermissions,
+                    shopId = _shopId.value
+                )
+                when (result) {
+                    is StaffRepository.StaffResult.Success -> {
+                        isLoading = false
+                        resetForm()
+                        onSuccess()
+                    }
+                    is StaffRepository.StaffResult.Error -> {
+                        errorMessage = result.message
+                        isLoading = false
+                    }
                 }
-                is StaffRepository.StaffResult.Error -> {
-                    errorMessage = result.message
-                    isLoading = false
-                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                isLoading = false
+                errorMessage = e.localizedMessage ?: "Failed to add staff"
             }
         }
     }
 
     fun loadStaffPermissions(userId: String) {
         viewModelScope.launch {
-            val permissions = staffRepository.getPermissionsList(userId, _shopId.value)
-            editPermissions = permissions.mapNotNull { entity ->
-                try { Permission.valueOf(entity.permission) } catch (_: Exception) { null }
-            }.toSet()
-            editFullAccess = editPermissions.size == Permission.entries.size
+            try {
+                val permissions = staffRepository.getPermissionsList(userId, _shopId.value)
+                editPermissions = permissions.mapNotNull { entity ->
+                    try { Permission.valueOf(entity.permission) } catch (_: Exception) { null }
+                }.toSet()
+                editFullAccess = editPermissions.size == Permission.entries.size
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -125,16 +135,27 @@ class StaffViewModel(
     fun updatePermissions(userId: String, onSuccess: () -> Unit) {
         isLoading = true
         viewModelScope.launch {
-            staffRepository.updatePermissions(userId, _shopId.value, editPermissions)
-            isLoading = false
-            onSuccess()
+            try {
+                staffRepository.updatePermissions(userId, _shopId.value, editPermissions)
+                isLoading = false
+                onSuccess()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                isLoading = false
+                errorMessage = e.localizedMessage ?: "Failed to update permissions"
+            }
         }
     }
 
     fun deleteStaff(userId: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
-            staffRepository.deleteStaff(userId)
-            onSuccess()
+            try {
+                staffRepository.deleteStaff(userId)
+                onSuccess()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = e.localizedMessage ?: "Failed to delete staff"
+            }
         }
     }
 

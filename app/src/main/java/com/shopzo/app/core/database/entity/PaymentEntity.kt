@@ -3,10 +3,12 @@ package com.shopzo.app.core.database.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * Represents a payment transaction made by a customer for a bill or outstanding due.
  */
+@Serializable
 @Entity(
     tableName = "payments",
     indices = [

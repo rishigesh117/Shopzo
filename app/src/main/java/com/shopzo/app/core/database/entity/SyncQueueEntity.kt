@@ -3,12 +3,14 @@ package com.shopzo.app.core.database.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * Room Entity for storing local offline mutation queue items.
  *
  * Each record represents a local change that needs to be synchronized with PostgreSQL when online.
  */
+@Serializable
 @Entity(
     tableName = "sync_queue",
     indices = [

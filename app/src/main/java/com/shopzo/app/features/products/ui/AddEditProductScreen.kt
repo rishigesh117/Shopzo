@@ -144,14 +144,18 @@ fun AddEditProductScreen(
                     shape = MaterialTheme.shapes.medium
                 )
 
-                ExposedDropdownMenuBox(expanded = unitExpanded, onExpandedChange = { unitExpanded = it }) {
+                ExposedDropdownMenuBox(
+                    expanded = unitExpanded,
+                    onExpandedChange = { unitExpanded = it },
+                    modifier = Modifier.weight(1f)
+                ) {
                     OutlinedTextField(
                         value = viewModel.selectedUnit.displayName,
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Unit") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExpanded) },
-                        modifier = Modifier.weight(1f).menuAnchor(),
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
                         shape = MaterialTheme.shapes.medium
                     )
                     ExposedDropdownMenu(expanded = unitExpanded, onDismissRequest = { unitExpanded = false }) {

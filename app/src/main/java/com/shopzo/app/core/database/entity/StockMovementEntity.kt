@@ -2,10 +2,12 @@ package com.shopzo.app.core.database.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * Records every stock change — restock or adjustment — for full audit trail.
  */
+@Serializable
 @Entity(tableName = "stock_movements")
 data class StockMovementEntity(
     @PrimaryKey

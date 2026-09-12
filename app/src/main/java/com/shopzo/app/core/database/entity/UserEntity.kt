@@ -3,11 +3,13 @@ package com.shopzo.app.core.database.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * Represents a user (Owner or Staff) in the SHOPZO system.
  * Both owners and staff share this table, differentiated by [role].
  */
+@Serializable
 @Entity(
     tableName = "users",
     indices = [Index(value = ["mobileNumber"], unique = true)]

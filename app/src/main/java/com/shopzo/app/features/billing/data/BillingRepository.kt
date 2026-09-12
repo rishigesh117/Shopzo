@@ -213,15 +213,19 @@ class BillingRepository(
     }
 
     private suspend fun enqueueSync(entityType: String, entityId: String, operationType: String, payloadJson: String, shopId: String) {
-        syncDao.insert(
-            SyncQueueEntity(
-                entityType = entityType,
-                entityId = entityId,
-                operationType = operationType,
-                payloadJson = payloadJson,
-                shopId = shopId,
-                createdAt = System.currentTimeMillis()
+        try {
+            syncDao.insert(
+                SyncQueueEntity(
+                    entityType = entityType,
+                    entityId = entityId,
+                    operationType = operationType,
+                    payloadJson = payloadJson,
+                    shopId = shopId,
+                    createdAt = System.currentTimeMillis()
+                )
             )
-        )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

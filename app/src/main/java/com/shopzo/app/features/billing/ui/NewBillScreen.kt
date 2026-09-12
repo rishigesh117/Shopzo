@@ -17,10 +17,13 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +40,7 @@ import com.shopzo.app.core.database.entity.stockQuantity
 import com.shopzo.app.core.ui.components.EmptyState
 import com.shopzo.app.core.ui.components.StockBadge
 import com.shopzo.app.core.ui.components.getStockStatus
+import com.shopzo.app.core.ui.theme.StockRed
 import com.shopzo.app.core.utils.MoneyUtils
 import com.shopzo.app.features.billing.data.CartItem
 import com.shopzo.app.features.customers.ui.AddCustomerDialog
@@ -58,6 +62,7 @@ fun NewBillScreen(
     var showCartBottomSheet by remember { mutableStateOf(false) }
     var editingCartItem by remember { mutableStateOf<CartItem?>(null) }
     var showAddCustomerDialog by remember { mutableStateOf(false) }
+    var showSelectCustomerDialog by remember { mutableStateOf(false) }
 
     val grandTotalPaise = remember(uiState.cart) {
         uiState.cart.sumOf { (it.sellingPricePaise * it.quantity).toLong() }
@@ -280,6 +285,23 @@ fun NewBillScreen(
         )
     }
 
+    // Search / Select Customer Dialog
+    if (showSelectCustomerDialog) {
+        SelectCustomerDialog(
+            customers = customers,
+            selectedCustomer = uiState.selectedCustomer,
+            onSelectCustomer = { cust ->
+                viewModel.selectCustomer(cust)
+                showSelectCustomerDialog = false
+            },
+            onAddNewCustomer = {
+                showSelectCustomerDialog = false
+                showAddCustomerDialog = true
+            },
+            onDismiss = { showSelectCustomerDialog = false }
+        )
+    }
+
     // Cart & Checkout Bottom Sheet
     if (showCartBottomSheet) {
         ModalBottomSheet(
@@ -334,42 +356,36 @@ fun NewBillScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    var customerExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = customerExpanded,
-                        onExpandedChange = { customerExpanded = !customerExpanded },
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    Box(modifier = Modifier.weight(1f)) {
                         OutlinedTextField(
                             value = uiState.selectedCustomer?.let { "${it.name} (${it.mobileNumber})" } ?: "Walk-in Customer",
                             onValueChange = {},
                             readOnly = true,
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerExpanded) },
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = customerExpanded,
-                            onDismissRequest = { customerExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Walk-in Customer") },
-                                onClick = {
-                                    viewModel.selectCustomer(null)
-                                    customerExpanded = false
-                                }
-                            )
-                            customers.forEach { cust ->
-                                DropdownMenuItem(
-                                    text = { Text("${cust.name} (${cust.mobileNumber})") },
-                                    onClick = {
-                                        viewModel.selectCustomer(cust)
-                                        customerExpanded = false
-                                    }
+                            leadingIcon = {
+                                Icon(
+                                    if (uiState.selectedCustomer != null) Icons.Filled.Person else Icons.Outlined.PersonOutline,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                            }
-                        }
+                            },
+                            trailingIcon = {
+                                if (uiState.selectedCustomer != null) {
+                                    IconButton(onClick = { viewModel.selectCustomer(null) }) {
+                                        Icon(Icons.Filled.Close, contentDescription = "Clear Customer")
+                                    }
+                                } else {
+                                    Icon(Icons.Filled.Search, contentDescription = "Search Customer", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .padding(end = if (uiState.selectedCustomer != null) 48.dp else 0.dp)
+                                .clickable { showSelectCustomerDialog = true }
+                        )
                     }
 
                     IconButton(
@@ -620,4 +636,193 @@ fun CartItemRow(
             }
         }
     }
+}
+
+@Composable
+fun SelectCustomerDialog(
+    customers: List<CustomerEntity>,
+    selectedCustomer: CustomerEntity?,
+    onSelectCustomer: (CustomerEntity?) -> Unit,
+    onAddNewCustomer: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredCustomers = remember(searchQuery, customers) {
+        val q = searchQuery.trim()
+        if (q.isEmpty()) customers
+        else customers.filter {
+            it.name.contains(q, ignoreCase = true) || it.mobileNumber.contains(q)
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Select Customer", fontWeight = FontWeight.Bold)
+                TextButton(onClick = {
+                    onDismiss()
+                    onAddNewCustomer()
+                }) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("New")
+                }
+            }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search by name or mobile...") },
+                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Filled.Close, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Quick Option: Walk-in Customer
+                    item {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selectedCustomer == null) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSelectCustomer(null)
+                                    onDismiss()
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Outlined.PersonOutline,
+                                    contentDescription = null,
+                                    tint = if (selectedCustomer == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        "Walk-in Customer",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        "Default (No account)",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (filteredCustomers.isEmpty() && searchQuery.isNotEmpty()) {
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "No customer found for \"$searchQuery\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedButton(onClick = {
+                                    onDismiss()
+                                    onAddNewCustomer()
+                                }) {
+                                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Add as New Customer")
+                                }
+                            }
+                        }
+                    } else {
+                        items(filteredCustomers, key = { it.id }) { cust ->
+                            val isSelected = selectedCustomer?.id == cust.id
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onSelectCustomer(cust)
+                                        onDismiss()
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            cust.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                Icons.Filled.Phone,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(12.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                cust.mobileNumber,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    if (cust.outstandingDuePaise > 0) {
+                                        Text(
+                                            "Due: " + MoneyUtils.formatPaise(cust.outstandingDuePaise),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = StockRed
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }

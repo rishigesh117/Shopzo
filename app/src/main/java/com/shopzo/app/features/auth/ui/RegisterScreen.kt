@@ -91,7 +91,10 @@ fun RegisterScreen(
             // Mobile Number
             OutlinedTextField(
                 value = viewModel.mobileNumber,
-                onValueChange = { viewModel.mobileNumber = it; viewModel.clearError() },
+                onValueChange = {
+                    viewModel.mobileNumber = com.shopzo.app.core.utils.ValidationUtils.filterMobileNumber(it)
+                    viewModel.clearError()
+                },
                 label = { Text("Mobile Number") },
                 leadingIcon = { Icon(Icons.Filled.Phone, contentDescription = null) },
                 singleLine = true,
@@ -103,7 +106,8 @@ fun RegisterScreen(
                     onNext = { focusManager.moveFocus(FocusDirection.Down) }
                 ),
                 modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
+                supportingText = { Text("${viewModel.mobileNumber.length}/10 digits") }
             )
 
             Spacer(modifier = Modifier.height(16.dp))

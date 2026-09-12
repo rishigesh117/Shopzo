@@ -62,20 +62,26 @@ class StockViewModel(
         isLoading = true
         errorMessage = null
         viewModelScope.launch {
-            val success = stockRepository.restock(
-                productId = productId,
-                quantity = restockQuantity.trim().toDouble(),
-                buyingPricePaise = buyPaise?.toLong(),
-                supplier = restockSupplier.ifBlank { null },
-                notes = restockNotes.ifBlank { null },
-                shopId = _shopId.value
-            )
-            isLoading = false
-            if (success) {
-                resetRestockForm()
-                onSuccess()
-            } else {
-                errorMessage = "Failed to restock. Product not found."
+            try {
+                val success = stockRepository.restock(
+                    productId = productId,
+                    quantity = restockQuantity.trim().toDouble(),
+                    buyingPricePaise = buyPaise?.toLong(),
+                    supplier = restockSupplier.ifBlank { null },
+                    notes = restockNotes.ifBlank { null },
+                    shopId = _shopId.value
+                )
+                isLoading = false
+                if (success) {
+                    resetRestockForm()
+                    onSuccess()
+                } else {
+                    errorMessage = "Failed to restock. Product not found."
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                isLoading = false
+                errorMessage = e.localizedMessage ?: "Failed to restock."
             }
         }
     }
@@ -87,20 +93,26 @@ class StockViewModel(
         isLoading = true
         errorMessage = null
         viewModelScope.launch {
-            val quantityChange = -adjustQuantity.trim().toDouble() // Adjustments reduce stock
-            val success = stockRepository.adjustStock(
-                productId = productId,
-                quantityChange = quantityChange,
-                reason = selectedReason,
-                notes = adjustNotes.ifBlank { null },
-                shopId = _shopId.value
-            )
-            isLoading = false
-            if (success) {
-                resetAdjustForm()
-                onSuccess()
-            } else {
-                errorMessage = "Failed to adjust stock."
+            try {
+                val quantityChange = -adjustQuantity.trim().toDouble() // Adjustments reduce stock
+                val success = stockRepository.adjustStock(
+                    productId = productId,
+                    quantityChange = quantityChange,
+                    reason = selectedReason,
+                    notes = adjustNotes.ifBlank { null },
+                    shopId = _shopId.value
+                )
+                isLoading = false
+                if (success) {
+                    resetAdjustForm()
+                    onSuccess()
+                } else {
+                    errorMessage = "Failed to adjust stock."
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                isLoading = false
+                errorMessage = e.localizedMessage ?: "Failed to adjust stock."
             }
         }
     }

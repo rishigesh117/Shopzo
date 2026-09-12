@@ -2,6 +2,7 @@ package com.shopzo.app.core.database.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * Represents a product in a shop.
@@ -9,6 +10,7 @@ import androidx.room.PrimaryKey
  * - Prices stored as integer paise (₹100.50 = 10050)
  * - Quantity stored as Double to support fractional units (Kg, Litre, etc.)
  */
+@Serializable
 @Entity(tableName = "products")
 data class ProductEntity(
     @PrimaryKey

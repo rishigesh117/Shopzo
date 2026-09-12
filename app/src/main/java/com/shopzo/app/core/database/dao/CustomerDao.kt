@@ -12,6 +12,9 @@ interface CustomerDao {
     @Update
     suspend fun updateCustomer(customer: CustomerEntity)
 
+    @Query("DELETE FROM customers WHERE id = :id")
+    suspend fun deleteCustomerById(id: String)
+
     @Query("SELECT * FROM customers WHERE id = :id")
     suspend fun getCustomerById(id: String): CustomerEntity?
 
