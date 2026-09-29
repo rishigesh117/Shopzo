@@ -2,6 +2,7 @@ package com.shopzo.app.core.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.shopzo.app.core.database.entity.StaffPermissionEntity
 import kotlinx.coroutines.flow.Flow
@@ -9,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface StaffPermissionDao {
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(permissions: List<StaffPermissionEntity>)
 
     @Query("SELECT * FROM staff_permissions WHERE userId = :userId AND shopId = :shopId")

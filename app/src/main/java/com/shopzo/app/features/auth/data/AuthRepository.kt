@@ -77,14 +77,17 @@ class AuthRepository(
                     val targetShop = body.shops.firstOrNull()
                     val userRole = targetShop?.role ?: UserRole.STAFF.name
 
+                    val existingLocalUser = userDao.getUserByMobile(cleanMobile)
+                    val userId = existingLocalUser?.id ?: body.user.id
+
                     val user = UserEntity(
-                        id = body.user.id,
+                        id = userId,
                         name = body.user.name,
                         mobileNumber = cleanMobile,
                         passwordHash = PasswordHasher.hash(password),
                         role = userRole,
-                        shopId = targetShop?.id,
-                        createdAt = System.currentTimeMillis()
+                        shopId = targetShop?.id ?: existingLocalUser?.shopId,
+                        createdAt = existingLocalUser?.createdAt ?: System.currentTimeMillis()
                     )
                     userDao.insert(user)
 
@@ -109,15 +112,13 @@ class AuthRepository(
                     }
 
                     return AuthResult.Success(user)
-                } else if (response.code() == 401) {
-                    return AuthResult.Error("Incorrect mobile number or password.")
                 }
             } catch (_: Exception) {
                 // Cloud unreachable, fall back to local database
             }
         }
 
-        // 2. Local database fallback
+        // 2. Local database fallback (runs if cloud fails OR if cloud returns 401/error for local accounts)
         val user = userDao.getUserByMobile(cleanMobile)
             ?: return AuthResult.Error("Incorrect mobile number or password.")
 

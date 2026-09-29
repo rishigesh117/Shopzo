@@ -2,6 +2,7 @@ package com.shopzo.app.core.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.shopzo.app.core.database.entity.ShopEntity
 import kotlinx.coroutines.flow.Flow
@@ -9,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ShopDao {
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(shop: ShopEntity)
 
     @Query("SELECT * FROM shops WHERE id = :shopId LIMIT 1")

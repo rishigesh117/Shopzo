@@ -37,6 +37,7 @@ class StaffRepository(
             return StaffResult.Error("This mobile number is already registered.")
         }
 
+        var cloudUserId: String? = null
         // Also register staff in backend so staff can immediately log in from their own device
         if (apiService != null) {
             try {
@@ -49,7 +50,9 @@ class StaffRepository(
                         permissions = permissions.map { it.name }
                     )
                 )
-                if (res.code() == 409) {
+                if (res.isSuccessful && res.body() != null) {
+                    cloudUserId = res.body()!!.staff.userId
+                } else if (res.code() == 409) {
                     return StaffResult.Error("Staff member already registered with this mobile number.")
                 }
             } catch (_: Exception) {
@@ -57,7 +60,7 @@ class StaffRepository(
             }
         }
 
-        val userId = UUID.randomUUID().toString()
+        val userId = cloudUserId ?: UUID.randomUUID().toString()
         val user = UserEntity(
             id = userId,
             name = cleanName,
