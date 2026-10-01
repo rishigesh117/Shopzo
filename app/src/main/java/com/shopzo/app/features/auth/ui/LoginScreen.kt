@@ -32,6 +32,7 @@ import com.shopzo.app.core.utils.ValidationUtils
 fun LoginScreen(
     viewModel: AuthViewModel,
     onNavigateToRegister: () -> Unit,
+    onNavigateToResetPassword: () -> Unit,
     onNavigateToDashboard: () -> Unit,
     onNavigateToCreateShop: () -> Unit
 ) {
@@ -127,6 +128,23 @@ fun LoginScreen(
             shape = MaterialTheme.shapes.medium
         )
 
+        // Forgot Password link
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            TextButton(onClick = onNavigateToResetPassword) {
+                Text(
+                    "Forgot Password?",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
         // Error message
         AnimatedVisibility(visible = viewModel.errorMessage != null) {
             Text(
@@ -135,7 +153,7 @@ fun LoginScreen(
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .padding(top = 4.dp),
                 textAlign = TextAlign.Start
             )
         }

@@ -16,6 +16,12 @@ data class LoginRequest(
 )
 
 @Serializable
+data class ResetPasswordRequest(
+    val mobileNumber: String,
+    val newPassword: String
+)
+
+@Serializable
 data class UserDto(
     val id: String,
     val mobileNumber: String,

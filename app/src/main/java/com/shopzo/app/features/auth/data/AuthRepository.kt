@@ -129,5 +129,47 @@ class AuthRepository(
         return AuthResult.Success(user)
     }
 
+    suspend fun resetPassword(mobileNumber: String, newPassword: String): AuthResult {
+        val cleanMobile = mobileNumber.trim()
+        val newPasswordHash = PasswordHasher.hash(newPassword)
+
+        var cloudResetSuccess = false
+        if (apiService != null) {
+            try {
+                val response = apiService.resetPassword(com.shopzo.app.core.network.dto.ResetPasswordRequest(cleanMobile, newPassword))
+                if (response.isSuccessful) {
+                    cloudResetSuccess = true
+                } else if (response.code() == 404) {
+                    return AuthResult.Error("No account registered with this mobile number.")
+                }
+            } catch (_: Exception) {
+                // Offline / network fallback
+            }
+        }
+
+        val localUser = userDao.getUserByMobile(cleanMobile)
+        if (localUser != null) {
+            val updatedUser = localUser.copy(passwordHash = newPasswordHash)
+            userDao.update(updatedUser)
+            return AuthResult.Success(updatedUser)
+        }
+
+        if (cloudResetSuccess) {
+            val dummyUser = UserEntity(
+                id = UUID.randomUUID().toString(),
+                name = "User",
+                mobileNumber = cleanMobile,
+                passwordHash = newPasswordHash,
+                role = UserRole.OWNER.name,
+                shopId = null,
+                createdAt = System.currentTimeMillis()
+            )
+            userDao.insert(dummyUser)
+            return AuthResult.Success(dummyUser)
+        }
+
+        return AuthResult.Error("No account registered with this mobile number.")
+    }
+
     suspend fun getUserById(userId: String): UserEntity? = userDao.getUserById(userId)
 }

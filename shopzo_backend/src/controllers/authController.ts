@@ -130,3 +130,47 @@ export async function getMe(req: AuthenticatedRequest, res: Response) {
   }
   return res.json({ user: req.user });
 }
+
+export async function resetPassword(req: AuthenticatedRequest, res: Response) {
+  const { mobileNumber, newPassword } = req.body;
+  if (!mobileNumber || !newPassword) {
+    return res.status(400).json({ error: 'Mobile number and new password are required' });
+  }
+
+  const cleanMobile = mobileNumber.trim();
+  const passwordHash = await hashPassword(newPassword);
+  const now = Date.now();
+
+  if (useMemoryDb) {
+    let found = false;
+    for (const u of memoryDb.users.values()) {
+      if (u.mobileNumber === cleanMobile) {
+        u.passwordHash = passwordHash;
+        u.updatedAt = now;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      return res.status(404).json({ error: 'No account registered with this mobile number' });
+    }
+    return res.json({ message: 'Password reset successfully' });
+  }
+
+  try {
+    const userRes = await pool.query('SELECT * FROM users WHERE mobile_number = $1', [cleanMobile]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'No account registered with this mobile number' });
+    }
+
+    await pool.query('UPDATE users SET password_hash = $1, updated_at = $2 WHERE mobile_number = $3', [
+      passwordHash,
+      now,
+      cleanMobile
+    ]);
+
+    return res.json({ message: 'Password reset successfully' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Database error during password reset' });
+  }
+}

@@ -13,6 +13,9 @@ interface ShopzoApiService {
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
 
+    @POST("api/auth/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<Unit>
+
     @GET("api/auth/me")
     suspend fun getMe(): Response<UserDto>
 

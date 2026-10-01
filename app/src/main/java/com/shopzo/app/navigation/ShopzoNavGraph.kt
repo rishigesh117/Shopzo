@@ -25,6 +25,7 @@ import com.shopzo.app.core.model.UserRole
 import com.shopzo.app.features.auth.ui.AuthViewModel
 import com.shopzo.app.features.auth.ui.LoginScreen
 import com.shopzo.app.features.auth.ui.RegisterScreen
+import com.shopzo.app.features.auth.ui.ResetPasswordScreen
 import com.shopzo.app.features.billing.ui.*
 import com.shopzo.app.features.customers.ui.*
 import com.shopzo.app.features.dashboard.ui.DashboardScreen
@@ -137,6 +138,7 @@ fun ShopzoNavGraph() {
                 LoginScreen(
                     viewModel = vm,
                     onNavigateToRegister = { navController.navigate(Routes.REGISTER) },
+                    onNavigateToResetPassword = { navController.navigate(Routes.RESET_PASSWORD) },
                     onNavigateToDashboard = { navController.navigate(Routes.DASHBOARD) { popUpTo(0) { inclusive = true } } },
                     onNavigateToCreateShop = { navController.navigate(Routes.CREATE_SHOP) { popUpTo(0) { inclusive = true } } }
                 )
@@ -147,6 +149,13 @@ fun ShopzoNavGraph() {
                     viewModel = vm,
                     onNavigateBack = { safePopBack(Routes.LOGIN) },
                     onNavigateToCreateShop = { navController.navigate(Routes.CREATE_SHOP) { popUpTo(0) { inclusive = true } } }
+                )
+            }
+            composable(Routes.RESET_PASSWORD) {
+                val vm: AuthViewModel = viewModel(factory = AuthViewModel.Factory(app.authRepository, app.shopRepository, app.sessionManager))
+                ResetPasswordScreen(
+                    viewModel = vm,
+                    onNavigateBack = { safePopBack(Routes.LOGIN) }
                 )
             }
             composable(Routes.CREATE_SHOP) {

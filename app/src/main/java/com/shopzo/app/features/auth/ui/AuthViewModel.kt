@@ -101,8 +101,51 @@ class AuthViewModel(
         }
     }
 
+    // Reset Password State
+    var resetMobileNumber by mutableStateOf("")
+    var resetNewPassword by mutableStateOf("")
+    var resetConfirmPassword by mutableStateOf("")
+    var successMessage by mutableStateOf<String?>(null)
+
+    fun resetPassword(onSuccess: () -> Unit) {
+        val mobileError = ValidationUtils.validateMobileNumber(resetMobileNumber)
+        val passwordError = ValidationUtils.validatePassword(resetNewPassword)
+        if (mobileError != null) {
+            errorMessage = mobileError
+            return
+        }
+        if (passwordError != null) {
+            errorMessage = passwordError
+            return
+        }
+        if (resetNewPassword != resetConfirmPassword) {
+            errorMessage = "Passwords do not match."
+            return
+        }
+
+        isLoading = true
+        errorMessage = null
+        successMessage = null
+        viewModelScope.launch {
+            when (val result = authRepository.resetPassword(resetMobileNumber, resetNewPassword)) {
+                is AuthRepository.AuthResult.Success -> {
+                    isLoading = false
+                    successMessage = "Password reset successfully! You can now sign in."
+                    password = resetNewPassword
+                    mobileNumber = resetMobileNumber
+                    onSuccess()
+                }
+                is AuthRepository.AuthResult.Error -> {
+                    isLoading = false
+                    errorMessage = result.message
+                }
+            }
+        }
+    }
+
     fun clearError() {
         errorMessage = null
+        successMessage = null
     }
 
     class Factory(

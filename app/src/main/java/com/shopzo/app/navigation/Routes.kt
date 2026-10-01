@@ -6,6 +6,7 @@ package com.shopzo.app.navigation
 object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
+    const val RESET_PASSWORD = "reset_password"
     const val CREATE_SHOP = "create_shop"
     const val DASHBOARD = "dashboard"
     const val PRODUCTS = "products"
