@@ -35,7 +35,7 @@ class AuthViewModel(
 
     fun register(onSuccess: () -> Unit) {
         val nameError = ValidationUtils.validateName(name, "Owner name")
-        val mobileError = ValidationUtils.validateMobileNumber(mobileNumber)
+        val mobileError = ValidationUtils.validateMobileNumber(mobileNumber, allowEmpty = false)
         val passwordError = ValidationUtils.validatePassword(password)
 
         val firstError = nameError ?: mobileError ?: passwordError
@@ -67,7 +67,7 @@ class AuthViewModel(
     }
 
     fun login(onDashboard: () -> Unit, onCreateShop: () -> Unit) {
-        val mobileError = ValidationUtils.validateMobileNumber(mobileNumber)
+        val mobileError = ValidationUtils.validateMobileNumber(mobileNumber, allowEmpty = false)
         val passwordError = ValidationUtils.validatePassword(password)
         val firstError = mobileError ?: passwordError
         if (firstError != null) {
@@ -108,7 +108,7 @@ class AuthViewModel(
     var successMessage by mutableStateOf<String?>(null)
 
     fun resetPassword(onSuccess: () -> Unit) {
-        val mobileError = ValidationUtils.validateMobileNumber(resetMobileNumber)
+        val mobileError = ValidationUtils.validateMobileNumber(resetMobileNumber, allowEmpty = false)
         val passwordError = ValidationUtils.validatePassword(resetNewPassword)
         if (mobileError != null) {
             errorMessage = mobileError

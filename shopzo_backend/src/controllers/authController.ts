@@ -4,6 +4,20 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { hashPassword, comparePassword, generateToken } from '../utils/auth';
 import { pool, memoryDb, useMemoryDb } from '../db';
 
+/** Map a raw PostgreSQL shop row (snake_case) to camelCase for the Android client */
+function mapShopRow(row: any): any {
+  return {
+    id: row.id,
+    shopCode: row.shop_code ?? row.shopCode ?? '',
+    name: row.name,
+    ownerId: row.owner_id ?? row.ownerId ?? '',
+    address: row.address ?? null,
+    createdAt: row.created_at ?? row.createdAt ?? null,
+    updatedAt: row.updated_at ?? row.updatedAt ?? null,
+    role: row.role ?? null,
+  };
+}
+
 export async function register(req: AuthenticatedRequest, res: Response) {
   const { mobileNumber, password, name } = req.body;
   if (!mobileNumber || !password || !name) {
@@ -117,7 +131,7 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     return res.json({
       token,
       user: { id: user.id, mobileNumber: user.mobile_number, name: user.name },
-      shops: shopsRes.rows
+      shops: shopsRes.rows.map(mapShopRow)
     });
   } catch (err) {
     return res.status(500).json({ error: 'Database error during login' });

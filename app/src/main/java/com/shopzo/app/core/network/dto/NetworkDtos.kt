@@ -31,9 +31,9 @@ data class UserDto(
 @Serializable
 data class ShopDto(
     val id: String,
-    val shopCode: String,
+    val shopCode: String = "",
     val name: String,
-    val ownerId: String,
+    val ownerId: String = "",
     val address: String? = null,
     val role: String? = null,
     val createdAt: Long? = null,

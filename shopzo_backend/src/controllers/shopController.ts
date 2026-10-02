@@ -4,6 +4,20 @@ import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { generateShopCode } from '../utils/auth';
 import { pool, memoryDb, useMemoryDb } from '../db';
 
+/** Map a raw PostgreSQL shop row (snake_case) to camelCase for the Android client */
+function mapShopRow(row: any): any {
+  return {
+    id: row.id,
+    shopCode: row.shop_code ?? row.shopCode ?? '',
+    name: row.name,
+    ownerId: row.owner_id ?? row.ownerId ?? '',
+    address: row.address ?? null,
+    createdAt: row.created_at ?? row.createdAt ?? null,
+    updatedAt: row.updated_at ?? row.updatedAt ?? null,
+    role: row.role ?? null,
+  };
+}
+
 export async function createShop(req: AuthenticatedRequest, res: Response) {
   if (!req.user) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -95,7 +109,7 @@ export async function getMyShops(req: AuthenticatedRequest, res: Response) {
        SELECT s.*, sp.role FROM shops s JOIN staff_permissions sp ON s.id = sp.shop_id WHERE sp.user_id = $1`,
       [req.user.userId]
     );
-    return res.json({ shops: resShops.rows });
+    return res.json({ shops: resShops.rows.map(mapShopRow) });
   } catch (err) {
     return res.status(500).json({ error: 'Database error fetching shops' });
   }
@@ -120,7 +134,7 @@ export async function getShopById(req: AuthenticatedRequest, res: Response) {
     if (resShop.rows.length === 0) {
       return res.status(404).json({ error: 'Shop not found' });
     }
-    return res.json({ shop: resShop.rows[0] });
+    return res.json({ shop: mapShopRow(resShop.rows[0]) });
   } catch (err) {
     return res.status(500).json({ error: 'Database error fetching shop' });
   }

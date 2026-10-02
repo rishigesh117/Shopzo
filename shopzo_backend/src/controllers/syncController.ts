@@ -243,6 +243,32 @@ async function processDbOperation(op: SyncOperation, shopId: string) {
   }
 }
 
+/** Map DB row helpers: PostgreSQL snake_case → camelCase for Android DTOs */
+function mapCategoryRow(r: any): any {
+  return { id: r.id, shopId: r.shop_id ?? r.shopId, name: r.name, createdAt: r.created_at ?? r.createdAt, updatedAt: r.updated_at ?? r.updatedAt, deleted: r.deleted ?? false };
+}
+function mapProductRow(r: any): any {
+  return { id: r.id, shopId: r.shop_id ?? r.shopId, categoryId: r.category_id ?? r.categoryId, name: r.name, brand: r.brand ?? null, buyingPricePaise: r.buying_price_paise ?? r.buyingPricePaise ?? 0, sellingPricePaise: r.selling_price_paise ?? r.sellingPricePaise ?? 0, quantity: r.quantity ?? 0, unit: r.unit ?? 'PCS', minStockLevel: r.min_stock_level ?? r.minStockLevel ?? 0, createdAt: r.created_at ?? r.createdAt, updatedAt: r.updated_at ?? r.updatedAt, deleted: r.deleted ?? false };
+}
+function mapStockMovementRow(r: any): any {
+  return { id: r.id, shopId: r.shop_id ?? r.shopId, productId: r.product_id ?? r.productId, type: r.type, quantity: r.quantity ?? 0, reason: r.reason ?? null, createdAt: r.created_at ?? r.createdAt };
+}
+function mapCustomerRow(r: any): any {
+  return { id: r.id, shopId: r.shop_id ?? r.shopId, name: r.name, mobileNumber: r.mobile_number ?? r.mobileNumber ?? '', address: r.address ?? null, totalPurchasePaise: r.total_purchase_paise ?? r.totalPurchasePaise ?? 0, outstandingDuePaise: r.outstanding_due_paise ?? r.outstandingDuePaise ?? 0, createdAt: r.created_at ?? r.createdAt, updatedAt: r.updated_at ?? r.updatedAt, deleted: r.deleted ?? false };
+}
+function mapBillRow(r: any): any {
+  return { id: r.id, shopId: r.shop_id ?? r.shopId, billNumber: r.bill_number ?? r.billNumber ?? '', customerId: r.customer_id ?? r.customerId ?? null, customerNameSnapshot: r.customer_name_snapshot ?? r.customerNameSnapshot ?? '', customerMobileSnapshot: r.customer_mobile_snapshot ?? r.customerMobileSnapshot ?? '', subtotalPaise: r.subtotal_paise ?? r.subtotalPaise ?? 0, grandTotalPaise: r.grand_total_paise ?? r.grandTotalPaise ?? 0, paidAmountPaise: r.paid_amount_paise ?? r.paidAmountPaise ?? 0, pendingAmountPaise: r.pending_amount_paise ?? r.pendingAmountPaise ?? 0, paymentStatus: r.payment_status ?? r.paymentStatus ?? 'PAID', createdAt: r.created_at ?? r.createdAt, updatedAt: r.updated_at ?? r.updatedAt };
+}
+function mapBillItemRow(r: any): any {
+  return { id: r.id, shopId: r.shop_id ?? r.shopId, billId: r.bill_id ?? r.billId, productId: r.product_id ?? r.productId, productNameSnapshot: r.product_name_snapshot ?? r.productNameSnapshot ?? '', quantity: r.quantity ?? 0, unit: r.unit ?? 'PCS', sellingPricePaise: r.selling_price_paise ?? r.sellingPricePaise ?? 0, buyingPricePaise: r.buying_price_paise ?? r.buyingPricePaise ?? 0, subtotalPaise: r.subtotal_paise ?? r.subtotalPaise ?? 0 };
+}
+function mapPaymentRow(r: any): any {
+  return { id: r.id, shopId: r.shop_id ?? r.shopId, billId: r.bill_id ?? r.billId ?? null, customerId: r.customer_id ?? r.customerId ?? null, amountPaise: r.amount_paise ?? r.amountPaise ?? 0, paymentMethod: r.payment_method ?? r.paymentMethod ?? 'CASH', createdAt: r.created_at ?? r.createdAt };
+}
+function mapReturnRow(r: any): any {
+  return { id: r.id, shopId: r.shop_id ?? r.shopId, billId: r.bill_id ?? r.billId, billItemId: r.bill_item_id ?? r.billItemId, productId: r.product_id ?? r.productId, quantityReturned: r.quantity_returned ?? r.quantityReturned ?? 0, refundAmountPaise: r.refund_amount_paise ?? r.refundAmountPaise ?? 0, stockRestored: r.stock_restored ?? r.stockRestored ?? true, reason: r.reason ?? null, createdAt: r.created_at ?? r.createdAt };
+}
+
 export async function pullSync(req: AuthenticatedRequest, res: Response) {
   const shopId = req.shopId!;
   const since = parseInt((req.query.since as string) || '0', 10);
@@ -287,17 +313,18 @@ export async function pullSync(req: AuthenticatedRequest, res: Response) {
     return res.json({
       serverTime,
       delta: {
-        categories: categories.rows,
-        products: products.rows,
-        stockMovements: stockMovements.rows,
-        customers: customers.rows,
-        bills: bills.rows,
-        billItems: billItems.rows,
-        payments: payments.rows,
-        returns: returns.rows
+        categories: categories.rows.map(mapCategoryRow),
+        products: products.rows.map(mapProductRow),
+        stockMovements: stockMovements.rows.map(mapStockMovementRow),
+        customers: customers.rows.map(mapCustomerRow),
+        bills: bills.rows.map(mapBillRow),
+        billItems: billItems.rows.map(mapBillItemRow),
+        payments: payments.rows.map(mapPaymentRow),
+        returns: returns.rows.map(mapReturnRow)
       }
     });
   } catch (err) {
     return res.status(500).json({ error: 'Database error during pull sync' });
   }
 }
+
