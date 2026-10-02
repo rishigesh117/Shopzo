@@ -63,7 +63,13 @@ fun ReceiptScreen(
                                     }
                                     appendLine("-------------------------")
                                     appendLine("TOTAL: ${MoneyUtils.formatPaise(b.grandTotalPaise)}")
+                                    if (b.receivedAmountPaise > b.paidAmountPaise) {
+                                        appendLine("RECEIVED: ${MoneyUtils.formatPaise(b.receivedAmountPaise)}")
+                                    }
                                     appendLine("PAID: ${MoneyUtils.formatPaise(b.paidAmountPaise)}")
+                                    if (b.changeReturnedPaise > 0) {
+                                        appendLine("CHANGE RETURNED: ${MoneyUtils.formatPaise(b.changeReturnedPaise)}")
+                                    }
                                     appendLine("PENDING: ${MoneyUtils.formatPaise(b.pendingAmountPaise)}")
                                     appendLine("Thank you for shopping!")
                                 }
@@ -153,9 +159,21 @@ fun ReceiptScreen(
                                 Text("TOTAL:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                 Text(MoneyUtils.formatPaise(b.grandTotalPaise), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             }
+                            if (b.receivedAmountPaise > b.paidAmountPaise) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("RECEIVED:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(MoneyUtils.formatPaise(b.receivedAmountPaise), style = MaterialTheme.typography.bodyMedium)
+                                }
+                            }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("PAID:", style = MaterialTheme.typography.bodyMedium)
                                 Text(MoneyUtils.formatPaise(b.paidAmountPaise), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            }
+                            if (b.changeReturnedPaise > 0) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("CHANGE RETURNED:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                    Text(MoneyUtils.formatPaise(b.changeReturnedPaise), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                }
                             }
                             if (b.pendingAmountPaise > 0) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

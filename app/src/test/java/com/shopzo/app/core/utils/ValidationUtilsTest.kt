@@ -10,11 +10,12 @@ class ValidationUtilsTest {
     fun validateMobileNumber_valid10Digits_returnsNull() {
         assertNull(ValidationUtils.validateMobileNumber("9876543210"))
         assertNull(ValidationUtils.validateMobileNumber("0123456789"))
+        assertNull(ValidationUtils.validateMobileNumber("", allowEmpty = true))
     }
 
     @Test
     fun validateMobileNumber_invalidNumbers_returnsError() {
-        assertNotNull(ValidationUtils.validateMobileNumber(""))
+        assertNotNull(ValidationUtils.validateMobileNumber("", allowEmpty = false))
         assertNotNull(ValidationUtils.validateMobileNumber("123"))
         assertNotNull(ValidationUtils.validateMobileNumber("98765432101"))
         assertNotNull(ValidationUtils.validateMobileNumber("abcdefghij"))

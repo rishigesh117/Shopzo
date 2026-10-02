@@ -41,6 +41,7 @@ import com.shopzo.app.core.ui.components.EmptyState
 import com.shopzo.app.core.ui.components.StockBadge
 import com.shopzo.app.core.ui.components.getStockStatus
 import com.shopzo.app.core.ui.theme.StockRed
+import com.shopzo.app.core.ui.theme.Teal700
 import com.shopzo.app.core.utils.MoneyUtils
 import com.shopzo.app.features.billing.data.CartItem
 import com.shopzo.app.features.customers.ui.AddCustomerDialog
@@ -428,10 +429,11 @@ fun NewBillScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Paid Amount & Remaining Auto-calculation
-                val paidDouble = uiState.paidAmountInput.toDoubleOrNull() ?: 0.0
-                val paidPaise = (paidDouble * 100).toLong()
-                val remainingPaise = (grandTotalPaise - paidPaise).coerceAtLeast(0L)
+                // Amount Received & Change / Remaining Due Auto-calculation
+                val receivedDouble = uiState.paidAmountInput.toDoubleOrNull() ?: 0.0
+                val receivedPaise = (receivedDouble * 100).toLong().coerceAtLeast(0L)
+                val changeReturnPaise = (receivedPaise - grandTotalPaise).coerceAtLeast(0L)
+                val remainingPaise = (grandTotalPaise - receivedPaise).coerceAtLeast(0L)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -441,20 +443,31 @@ fun NewBillScreen(
                     OutlinedTextField(
                         value = uiState.paidAmountInput,
                         onValueChange = { viewModel.setPaidAmountInput(it) },
-                        label = { Text("Paid Amount (₹)") },
+                        label = { Text("Amount Received (₹)") },
+                        placeholder = { Text("e.g. 100") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.weight(1f)
                     )
 
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("Remaining Due:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(
-                            text = MoneyUtils.formatPaise(remainingPaise),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (remainingPaise > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                        )
+                        if (changeReturnPaise > 0) {
+                            Text("Change to Give:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = MoneyUtils.formatPaise(changeReturnPaise),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Teal700
+                            )
+                        } else {
+                            Text("Remaining Due:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = MoneyUtils.formatPaise(remainingPaise),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (remainingPaise > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
 

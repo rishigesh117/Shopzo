@@ -24,6 +24,7 @@ import com.shopzo.app.core.utils.MoneyUtils
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
+    onNavigateToBills: () -> Unit,
     onNavigateToProducts: () -> Unit,
     onNavigateToAddProduct: () -> Unit,
     onNavigateToNewBill: () -> Unit,
@@ -82,14 +83,16 @@ fun DashboardScreen(
                     value = MoneyUtils.formatPaise(todaySales.totalSalesPaise),
                     icon = Icons.Outlined.CurrencyRupee,
                     color = Teal700,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onClick = onNavigateToBills
                 )
                 DashboardStatCard(
                     title = "Today's Bills",
                     value = "${todaySales.billCount}",
                     icon = Icons.Outlined.Receipt,
                     color = Amber600,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onClick = onNavigateToBills
                 )
             }
 

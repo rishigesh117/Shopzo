@@ -163,7 +163,7 @@ fun CustomerListScreen(
         AlertDialog(
             onDismissRequest = { customerToDelete = null },
             title = { Text("Delete Customer") },
-            text = { Text("Are you sure you want to delete ${cust.name} (${cust.mobileNumber})? This action cannot be undone.") },
+            text = { Text("Are you sure you want to delete ${cust.name}${if (cust.mobileNumber.isNotEmpty()) " (${cust.mobileNumber})" else ""}? This action cannot be undone.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -210,10 +210,12 @@ fun CustomerCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(customer.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Phone, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(customer.mobileNumber, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (customer.mobileNumber.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Phone, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(customer.mobileNumber, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(

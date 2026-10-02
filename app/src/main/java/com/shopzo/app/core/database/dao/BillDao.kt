@@ -51,6 +51,12 @@ interface BillDao {
     @Query("SELECT MAX(CAST(SUBSTR(billNumber, 2) AS INTEGER)) FROM bills WHERE shopId = :shopId AND billNumber LIKE '#%'")
     suspend fun getMaxBillNumberNumeric(shopId: String): Int?
 
-    @Query("UPDATE bills SET paidAmountPaise = paidAmountPaise + :additionalPaidPaise, pendingAmountPaise = pendingAmountPaise - :additionalPaidPaise, paymentStatus = :newStatus WHERE id = :billId")
-    suspend fun applyPaymentToBill(billId: String, additionalPaidPaise: Long, newStatus: String)
+    @Query("UPDATE bills SET paidAmountPaise = paidAmountPaise + :additionalPaidPaise, receivedAmountPaise = receivedAmountPaise + :additionalReceivedPaise, changeReturnedPaise = changeReturnedPaise + :additionalChangePaise, pendingAmountPaise = pendingAmountPaise - :additionalPaidPaise, paymentStatus = :newStatus WHERE id = :billId")
+    suspend fun applyPaymentToBill(
+        billId: String,
+        additionalPaidPaise: Long,
+        additionalReceivedPaise: Long,
+        additionalChangePaise: Long,
+        newStatus: String
+    )
 }

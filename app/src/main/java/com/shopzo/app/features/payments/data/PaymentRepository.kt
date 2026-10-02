@@ -60,40 +60,74 @@ class PaymentRepository(
                     val bill = billDao.getBillById(billId)
                         ?: throw IllegalArgumentException("Bill not found.")
 
-                    if (amountPaise > bill.pendingAmountPaise) {
-                        throw IllegalArgumentException("Payment amount ₹${amountPaise / 100.0} exceeds bill pending amount ₹${bill.pendingAmountPaise / 100.0}.")
-                    }
+                    val actualReceivedPaise = amountPaise
+                    val actualPaymentApplied = minOf(actualReceivedPaise, bill.pendingAmountPaise)
+                    val changeReturnedPaise = (actualReceivedPaise - bill.pendingAmountPaise).coerceAtLeast(0L)
 
-                    val newPending = bill.pendingAmountPaise - amountPaise
+                    val paymentRecord = PaymentEntity(
+                        id = UUID.randomUUID().toString(),
+                        billId = billId,
+                        customerId = customerId,
+                        amountPaise = actualPaymentApplied,
+                        paymentMethod = paymentMethod,
+                        createdAt = now,
+                        shopId = shopId
+                    )
+                    paymentDao.insertPayment(paymentRecord)
+                    enqueueSync("PAYMENT", paymentRecord.id, "CREATE", json.encodeToString(paymentRecord), shopId)
+
+                    val newPending = (bill.pendingAmountPaise - actualPaymentApplied).coerceAtLeast(0L)
                     val newStatus = if (newPending <= 0L) "PAID" else "PARTIALLY_PAID"
 
-                    billDao.applyPaymentToBill(billId, amountPaise, newStatus)
+                    billDao.applyPaymentToBill(
+                        billId = billId,
+                        additionalPaidPaise = actualPaymentApplied,
+                        additionalReceivedPaise = actualReceivedPaise,
+                        additionalChangePaise = changeReturnedPaise,
+                        newStatus = newStatus
+                    )
+
                     val updatedBill = billDao.getBillById(billId)
                     if (updatedBill != null) {
                         enqueueSync("BILL", billId, "UPDATE", json.encodeToString(updatedBill), shopId)
                     }
 
-                    if (!bill.customerId.isNullOrEmpty()) {
-                        customerDao.reduceOutstandingDue(bill.customerId, amountPaise, now)
+                    if (!bill.customerId.isNullOrEmpty() && bill.customerId != "WALK_IN") {
+                        customerDao.reduceOutstandingDue(bill.customerId, actualPaymentApplied, now)
                         val updatedCust = customerDao.getCustomerById(bill.customerId)
                         if (updatedCust != null) {
                             enqueueSync("CUSTOMER", bill.customerId, "UPDATE", json.encodeToString(updatedCust), shopId)
                         }
                     }
+
+                    paymentRecord
                 } else {
                     // Overall customer payment (applied to customer due)
                     val customer = customerDao.getCustomerById(customerId)
                         ?: throw IllegalArgumentException("Customer not found.")
 
-                    if (amountPaise > customer.outstandingDuePaise) {
-                        throw IllegalArgumentException("Payment amount ₹${amountPaise / 100.0} exceeds customer outstanding due ₹${customer.outstandingDuePaise / 100.0}.")
-                    }
+                    val actualReceivedPaise = amountPaise
+                    val actualPaymentApplied = minOf(actualReceivedPaise, customer.outstandingDuePaise)
 
-                    customerDao.reduceOutstandingDue(customerId, amountPaise, now)
+                    val paymentRecord = PaymentEntity(
+                        id = UUID.randomUUID().toString(),
+                        billId = null,
+                        customerId = customerId,
+                        amountPaise = actualPaymentApplied,
+                        paymentMethod = paymentMethod,
+                        createdAt = now,
+                        shopId = shopId
+                    )
+                    paymentDao.insertPayment(paymentRecord)
+                    enqueueSync("PAYMENT", paymentRecord.id, "CREATE", json.encodeToString(paymentRecord), shopId)
+
+                    customerDao.reduceOutstandingDue(customerId, actualPaymentApplied, now)
                     val updatedCust = customerDao.getCustomerById(customerId)
                     if (updatedCust != null) {
                         enqueueSync("CUSTOMER", customerId, "UPDATE", json.encodeToString(updatedCust), shopId)
                     }
+
+                    paymentRecord
                 }
 
                 paymentRecord

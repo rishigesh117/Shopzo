@@ -6,9 +6,11 @@ package com.shopzo.app.core.utils
  */
 object ValidationUtils {
 
-    fun validateMobileNumber(mobile: String): String? {
+    fun validateMobileNumber(mobile: String, allowEmpty: Boolean = true): String? {
         val trimmed = mobile.trim()
-        if (trimmed.isEmpty()) return "Mobile number is required."
+        if (trimmed.isEmpty()) {
+            return if (allowEmpty) null else "Mobile number is required."
+        }
         if (!trimmed.matches(Regex("^[0-9]{10}$"))) return "Enter a valid 10-digit mobile number."
         return null
     }

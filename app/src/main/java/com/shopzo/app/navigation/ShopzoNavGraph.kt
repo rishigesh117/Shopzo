@@ -31,7 +31,7 @@ import com.shopzo.app.features.billing.ui.*
 import com.shopzo.app.features.customers.ui.*
 import com.shopzo.app.features.dashboard.ui.DashboardScreen
 import com.shopzo.app.features.dashboard.ui.DashboardViewModel
-import com.shopzo.app.features.payments.ui.PaymentViewModel
+import com.shopzo.app.features.payments.ui.*
 import com.shopzo.app.features.products.ui.*
 import com.shopzo.app.features.reports.ui.ReportsScreen
 import com.shopzo.app.features.reports.ui.ReportsViewModel
@@ -180,6 +180,7 @@ fun ShopzoNavGraph() {
                 val vm: DashboardViewModel = viewModel(factory = DashboardViewModel.Factory(app.productRepository, app.reportRepository, app.customerRepository, app.sessionManager))
                 DashboardScreen(
                     viewModel = vm,
+                    onNavigateToBills = { navController.navigate(Routes.BILLS) },
                     onNavigateToProducts = { navController.navigate(Routes.PRODUCTS) },
                     onNavigateToAddProduct = { navController.navigate(Routes.ADD_PRODUCT) },
                     onNavigateToNewBill = { navController.navigate(Routes.NEW_BILL) },
@@ -264,11 +265,19 @@ fun ShopzoNavGraph() {
                 )
             }
 
+            composable(Routes.PAYMENTS) {
+                val paymentVm: PaymentViewModel = viewModel(factory = PaymentViewModel.Factory(app.paymentRepository, app.sessionManager))
+                PaymentsScreen(
+                    viewModel = paymentVm,
+                    onNavigateBack = { safePopBack(Routes.MORE) },
+                    onNavigateToBillDetail = { billId -> navController.navigate(Routes.billDetail(billId)) }
+                )
+            }
             composable(Routes.RETURNS) {
                 val returnsVm: ReturnsViewModel = viewModel(factory = ReturnsViewModel.Factory(app.returnRepository, app.sessionManager))
                 ReturnsScreen(
                     viewModel = returnsVm,
-                    onNavigateBack = { safePopBack(Routes.DASHBOARD) },
+                    onNavigateBack = { safePopBack(Routes.MORE) },
                     onNavigateToBillDetail = { billId -> navController.navigate(Routes.billDetail(billId)) }
                 )
             }
@@ -276,7 +285,7 @@ fun ShopzoNavGraph() {
                 val reportsVm: ReportsViewModel = viewModel(factory = ReportsViewModel.Factory(app.reportRepository, app.customerRepository, app.sessionManager))
                 ReportsScreen(
                     viewModel = reportsVm,
-                    onNavigateBack = { safePopBack(Routes.DASHBOARD) },
+                    onNavigateBack = { safePopBack(Routes.MORE) },
                     onNavigateToCustomerDetail = { customerId -> navController.navigate(Routes.customerDetail(customerId)) }
                 )
             }
@@ -293,6 +302,9 @@ fun ShopzoNavGraph() {
                 MoreScreen(
                     onNavigateToStaff = { navController.navigate(Routes.STAFF_LIST) },
                     onNavigateToCategories = { navController.navigate(Routes.CATEGORIES) },
+                    onNavigateToPayments = { navController.navigate(Routes.PAYMENTS) },
+                    onNavigateToReturns = { navController.navigate(Routes.RETURNS) },
+                    onNavigateToReports = { navController.navigate(Routes.REPORTS) },
                     onNavigateToShopSettings = { navController.navigate(Routes.SHOP_SETTINGS) },
                     onLogout = {
                         scope.launch {

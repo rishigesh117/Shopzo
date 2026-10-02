@@ -31,7 +31,7 @@ import com.shopzo.app.core.database.entity.*
         ReturnEntity::class,
         SyncQueueEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class ShopzoDatabase : RoomDatabase() {
@@ -178,6 +178,13 @@ abstract class ShopzoDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `bills` ADD COLUMN `receivedAmountPaise` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `bills` ADD COLUMN `changeReturnedPaise` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): ShopzoDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -185,7 +192,7 @@ abstract class ShopzoDatabase : RoomDatabase() {
                     ShopzoDatabase::class.java,
                     "shopzo_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
                 INSTANCE = instance
                 instance

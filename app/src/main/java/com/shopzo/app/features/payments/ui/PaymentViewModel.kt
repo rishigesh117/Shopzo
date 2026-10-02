@@ -26,6 +26,11 @@ class PaymentViewModel(
     private val _uiState = MutableStateFlow(PaymentUiState())
     val uiState: StateFlow<PaymentUiState> = _uiState.asStateFlow()
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val payments: StateFlow<List<PaymentEntity>> = _shopId.flatMapLatest { id ->
+        if (id.isNotEmpty()) paymentRepository.getPaymentsByShop(id) else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         viewModelScope.launch {
             sessionManager.sessionFlow.collect { session ->

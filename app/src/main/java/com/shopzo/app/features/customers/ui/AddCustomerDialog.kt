@@ -8,7 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.shopzo.app.core.database.entity.CustomerEntity
-
 import com.shopzo.app.core.utils.ValidationUtils
 
 @Composable
@@ -21,6 +20,8 @@ fun AddCustomerDialog(
     var mobileNumber by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsState()
+
+    val isMobileValid = mobileNumber.isEmpty() || mobileNumber.length == 10
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -44,11 +45,15 @@ fun AddCustomerDialog(
                 OutlinedTextField(
                     value = mobileNumber,
                     onValueChange = { mobileNumber = ValidationUtils.filterMobileNumber(it) },
-                    label = { Text("Mobile Number *") },
+                    label = { Text("Mobile Number (Optional)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    supportingText = { Text("${mobileNumber.length}/10 digits") }
+                    supportingText = {
+                        if (mobileNumber.isNotEmpty()) {
+                            Text("${mobileNumber.length}/10 digits")
+                        }
+                    }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -69,7 +74,7 @@ fun AddCustomerDialog(
                         onDismiss()
                     }
                 },
-                enabled = !uiState.isLoading && name.isNotBlank() && mobileNumber.length == 10
+                enabled = !uiState.isLoading && name.isNotBlank() && isMobileValid
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary)
@@ -98,6 +103,8 @@ fun EditCustomerDialog(
     var address by remember { mutableStateOf(customer.address ?: "") }
     val uiState by viewModel.uiState.collectAsState()
 
+    val isMobileValid = mobileNumber.isEmpty() || mobileNumber.length == 10
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Customer") },
@@ -120,11 +127,15 @@ fun EditCustomerDialog(
                 OutlinedTextField(
                     value = mobileNumber,
                     onValueChange = { mobileNumber = ValidationUtils.filterMobileNumber(it) },
-                    label = { Text("Mobile Number *") },
+                    label = { Text("Mobile Number (Optional)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    supportingText = { Text("${mobileNumber.length}/10 digits") }
+                    supportingText = {
+                        if (mobileNumber.isNotEmpty()) {
+                            Text("${mobileNumber.length}/10 digits")
+                        }
+                    }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -145,7 +156,7 @@ fun EditCustomerDialog(
                         onDismiss()
                     }
                 },
-                enabled = !uiState.isLoading && name.isNotBlank() && mobileNumber.length == 10
+                enabled = !uiState.isLoading && name.isNotBlank() && isMobileValid
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary)

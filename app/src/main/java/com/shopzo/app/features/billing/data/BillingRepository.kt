@@ -71,7 +71,8 @@ class BillingRepository(
         customerMobileSnapshot: String,
         cartItems: List<CartItem>,
         paidAmountPaise: Long,
-        paymentMethod: String // CASH, UPI, CARD, CREDIT
+        paymentMethod: String, // CASH, UPI, CARD, CREDIT
+        receivedAmountPaise: Long = paidAmountPaise
     ): Result<BillEntity> {
         if (cartItems.isEmpty()) {
             return Result.failure(IllegalArgumentException("Cart is empty."))
@@ -81,18 +82,16 @@ class BillingRepository(
             val createdBill = database.withTransaction {
                 // 1. Calculate totals
                 val grandTotalPaise = cartItems.sumOf { (it.sellingPricePaise * it.quantity).toLong() }
+                val actualReceivedPaise = maxOf(0L, receivedAmountPaise)
+                
+                // Actual paid amount applied to the bill cannot exceed grand total
+                val actualPaidPaise = minOf(actualReceivedPaise, grandTotalPaise)
+                val changeReturnedPaise = (actualReceivedPaise - grandTotalPaise).coerceAtLeast(0L)
+                val pendingAmountPaise = (grandTotalPaise - actualPaidPaise).coerceAtLeast(0L)
 
-                if (paidAmountPaise > grandTotalPaise) {
-                    throw IllegalArgumentException("Paid amount cannot exceed total bill amount of ₹${grandTotalPaise / 100.0}.")
-                }
-                if (paidAmountPaise < 0) {
-                    throw IllegalArgumentException("Paid amount cannot be negative.")
-                }
-
-                val pendingAmountPaise = grandTotalPaise - paidAmountPaise
                 val paymentStatus = when {
                     pendingAmountPaise <= 0L -> "PAID"
-                    paidAmountPaise > 0L -> "PARTIALLY_PAID"
+                    actualPaidPaise > 0L -> "PARTIALLY_PAID"
                     else -> "PENDING"
                 }
 
@@ -112,7 +111,9 @@ class BillingRepository(
                     customerMobileSnapshot = customerMobileSnapshot,
                     subtotalPaise = grandTotalPaise,
                     grandTotalPaise = grandTotalPaise,
-                    paidAmountPaise = paidAmountPaise,
+                    paidAmountPaise = actualPaidPaise,
+                    receivedAmountPaise = actualReceivedPaise,
+                    changeReturnedPaise = changeReturnedPaise,
                     pendingAmountPaise = pendingAmountPaise,
                     paymentStatus = paymentStatus,
                     createdAt = now,

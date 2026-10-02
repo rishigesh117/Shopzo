@@ -112,7 +112,7 @@ class CustomerViewModel(
             _uiState.update { it.copy(errorMessage = nameErr) }
             return
         }
-        val mobileErr = com.shopzo.app.core.utils.ValidationUtils.validateMobileNumber(trimmedMobile)
+        val mobileErr = com.shopzo.app.core.utils.ValidationUtils.validateMobileNumber(trimmedMobile, allowEmpty = true)
         if (mobileErr != null) {
             _uiState.update { it.copy(errorMessage = mobileErr) }
             return

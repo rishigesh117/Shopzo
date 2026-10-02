@@ -31,7 +31,7 @@ class BackupRepository(
             CustomerBackupDto(it.id, it.name, it.mobileNumber, it.address, it.totalPurchasePaise, it.outstandingDuePaise, it.createdAt, it.updatedAt, it.shopId)
         }
         val bills = database.billDao().getBillsByShop(shopId).first().map {
-            BillBackupDto(it.id, it.billNumber, it.customerId, it.customerNameSnapshot, it.customerMobileSnapshot, it.subtotalPaise, it.grandTotalPaise, it.paidAmountPaise, it.pendingAmountPaise, it.paymentStatus, it.createdAt, it.shopId)
+            BillBackupDto(it.id, it.billNumber, it.customerId, it.customerNameSnapshot, it.customerMobileSnapshot, it.subtotalPaise, it.grandTotalPaise, it.paidAmountPaise, it.receivedAmountPaise, it.changeReturnedPaise, it.pendingAmountPaise, it.paymentStatus, it.createdAt, it.shopId)
         }
         val billItems = mutableListOf<BillItemBackupDto>()
         bills.forEach { b ->
@@ -104,7 +104,7 @@ class BackupRepository(
 
                 // Restore Bills
                 backup.bills.forEach { b ->
-                    database.billDao().insertBill(BillEntity(b.id, b.billNumber, b.customerId, b.customerNameSnapshot, b.customerMobileSnapshot, b.subtotalPaise, b.grandTotalPaise, b.paidAmountPaise, b.pendingAmountPaise, b.paymentStatus, b.createdAt, b.shopId))
+                    database.billDao().insertBill(BillEntity(b.id, b.billNumber, b.customerId, b.customerNameSnapshot, b.customerMobileSnapshot, b.subtotalPaise, b.grandTotalPaise, b.paidAmountPaise, b.receivedAmountPaise, b.changeReturnedPaise, b.pendingAmountPaise, b.paymentStatus, b.createdAt, b.shopId))
                 }
 
                 // Restore Bill Items

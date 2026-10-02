@@ -179,13 +179,9 @@ class POSViewModel(
         }
 
         val grandTotalPaise = state.cart.sumOf { (it.sellingPricePaise * it.quantity).toLong() }
-        val paidAmountDouble = state.paidAmountInput.toDoubleOrNull() ?: 0.0
-        val paidAmountPaise = (paidAmountDouble * 100).toLong()
-
-        if (paidAmountPaise > grandTotalPaise) {
-            _uiState.update { it.copy(errorMessage = "Paid amount cannot exceed total bill amount.") }
-            return
-        }
+        val receivedAmountDouble = state.paidAmountInput.toDoubleOrNull() ?: 0.0
+        val receivedAmountPaise = (receivedAmountDouble * 100).toLong().coerceAtLeast(0L)
+        val paidAmountPaise = minOf(receivedAmountPaise, grandTotalPaise)
 
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
@@ -197,7 +193,8 @@ class POSViewModel(
                 customerMobileSnapshot = state.selectedCustomer?.mobileNumber ?: "",
                 cartItems = state.cart,
                 paidAmountPaise = paidAmountPaise,
-                paymentMethod = state.paymentMethod
+                paymentMethod = state.paymentMethod,
+                receivedAmountPaise = receivedAmountPaise
             )
 
             result.fold(

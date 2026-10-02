@@ -219,9 +219,21 @@ fun BillDetailScreen(
                                 Text("Grand Total:", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                 Text(MoneyUtils.formatPaise(currentBill.grandTotalPaise), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             }
+                            if (currentBill.receivedAmountPaise > currentBill.paidAmountPaise) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Amount Received:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(MoneyUtils.formatPaise(currentBill.receivedAmountPaise), style = MaterialTheme.typography.bodyMedium)
+                                }
+                            }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("Paid Amount:", style = MaterialTheme.typography.bodyMedium, color = Teal700, fontWeight = FontWeight.SemiBold)
                                 Text(MoneyUtils.formatPaise(currentBill.paidAmountPaise), style = MaterialTheme.typography.bodyMedium, color = Teal700, fontWeight = FontWeight.SemiBold)
+                            }
+                            if (currentBill.changeReturnedPaise > 0) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("Change Returned:", style = MaterialTheme.typography.bodyMedium, color = Teal700, fontWeight = FontWeight.Bold)
+                                    Text(MoneyUtils.formatPaise(currentBill.changeReturnedPaise), style = MaterialTheme.typography.bodyMedium, color = Teal700, fontWeight = FontWeight.Bold)
+                                }
                             }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("Pending Due:", style = MaterialTheme.typography.bodyMedium, color = StockRed, fontWeight = FontWeight.SemiBold)

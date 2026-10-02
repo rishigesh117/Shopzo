@@ -50,8 +50,8 @@ class CustomerRepository(
         if (trimmedName.isEmpty()) {
             return Result.failure(IllegalArgumentException("Customer name is required."))
         }
-        if (trimmedMobile.isEmpty()) {
-            return Result.failure(IllegalArgumentException("Mobile number is required."))
+        if (trimmedMobile.isNotEmpty() && !trimmedMobile.matches(Regex("^[0-9]{10}$"))) {
+            return Result.failure(IllegalArgumentException("Enter a valid 10-digit mobile number."))
         }
 
         val customer = CustomerEntity(

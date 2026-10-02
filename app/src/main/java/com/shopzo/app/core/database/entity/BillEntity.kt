@@ -27,6 +27,8 @@ data class BillEntity(
     val subtotalPaise: Long,
     val grandTotalPaise: Long,
     val paidAmountPaise: Long,
+    val receivedAmountPaise: Long = 0L,
+    val changeReturnedPaise: Long = 0L,
     val pendingAmountPaise: Long,
     val paymentStatus: String, // PAID, PARTIALLY_PAID, PENDING
     val createdAt: Long = System.currentTimeMillis(),

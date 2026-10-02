@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.AssignmentReturn
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -20,6 +21,9 @@ import androidx.compose.ui.unit.dp
 fun MoreScreen(
     onNavigateToStaff: () -> Unit,
     onNavigateToCategories: () -> Unit,
+    onNavigateToPayments: () -> Unit,
+    onNavigateToReturns: () -> Unit,
+    onNavigateToReports: () -> Unit,
     onNavigateToShopSettings: () -> Unit,
     onLogout: () -> Unit
 ) {
@@ -40,7 +44,7 @@ fun MoreScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("More") }) }
+        topBar = { TopAppBar(title = { Text("More", fontWeight = FontWeight.Bold) }) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -64,23 +68,20 @@ fun MoreScreen(
             MoreMenuItem(
                 icon = Icons.Outlined.Payment,
                 title = "Payments",
-                subtitle = "Coming in Phase 2",
-                onClick = {},
-                enabled = false
+                subtitle = "View payment history",
+                onClick = onNavigateToPayments
             )
             MoreMenuItem(
-                icon = Icons.Outlined.AssignmentReturn,
+                icon = Icons.AutoMirrored.Outlined.AssignmentReturn,
                 title = "Returns",
-                subtitle = "Coming in Phase 2",
-                onClick = {},
-                enabled = false
+                subtitle = "View product return history",
+                onClick = onNavigateToReturns
             )
             MoreMenuItem(
                 icon = Icons.Outlined.Assessment,
                 title = "Reports",
-                subtitle = "Coming in Phase 2",
-                onClick = {},
-                enabled = false
+                subtitle = "View sales, stock, and customer reports",
+                onClick = onNavigateToReports
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             MoreMenuItem(
