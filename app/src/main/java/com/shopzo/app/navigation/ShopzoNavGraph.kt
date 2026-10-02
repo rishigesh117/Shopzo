@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -55,7 +56,7 @@ val bottomNavItems = listOf(
     BottomNavItem(Routes.MORE, Icons.Filled.MoreHoriz, "More")
 )
 
-val screensWithBottomNav = setOf(Routes.DASHBOARD, Routes.BILLS, Routes.PRODUCTS, Routes.CUSTOMERS, Routes.MORE)
+val authAndOnboardingRoutes = setOf(Routes.LOGIN, Routes.REGISTER, Routes.RESET_PASSWORD, Routes.CREATE_SHOP)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +82,7 @@ fun ShopzoNavGraph() {
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-    val showBottomNav = currentRoute in screensWithBottomNav
+    val showBottomNav = currentRoute != null && currentRoute !in authAndOnboardingRoutes
 
     // Session data for ViewModels
     var userName by remember { mutableStateOf("") }
@@ -90,7 +91,7 @@ fun ShopzoNavGraph() {
     fun safePopBack(fallbackRoute: String = Routes.DASHBOARD) {
         if (!navController.popBackStack()) {
             navController.navigate(fallbackRoute) {
-                popUpTo(Routes.DASHBOARD) { saveState = true }
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
             }
         }
@@ -108,15 +109,23 @@ fun ShopzoNavGraph() {
             if (showBottomNav) {
                 NavigationBar {
                     bottomNavItems.forEach { item ->
+                        val isSelected = when (item.route) {
+                            Routes.DASHBOARD -> currentRoute == Routes.DASHBOARD
+                            Routes.BILLS -> currentRoute in setOf(Routes.BILLS, Routes.NEW_BILL, Routes.BILL_DETAIL, Routes.RECEIPT)
+                            Routes.PRODUCTS -> currentRoute in setOf(Routes.PRODUCTS, Routes.ADD_PRODUCT, Routes.EDIT_PRODUCT, Routes.PRODUCT_DETAIL, Routes.CATEGORIES, Routes.RESTOCK, Routes.STOCK_ADJUSTMENT, Routes.STOCK_HISTORY)
+                            Routes.CUSTOMERS -> currentRoute in setOf(Routes.CUSTOMERS, Routes.CUSTOMER_DETAIL)
+                            Routes.MORE -> currentRoute in setOf(Routes.MORE, Routes.SETTINGS, Routes.SHOP_SETTINGS, Routes.STAFF_LIST, Routes.ADD_STAFF, Routes.EDIT_STAFF, Routes.STAFF_PERMISSIONS, Routes.REPORTS, Routes.RETURNS, Routes.PAYMENTS)
+                            else -> currentRoute == item.route
+                        }
                         NavigationBarItem(
-                            selected = currentRoute == item.route,
+                            selected = isSelected,
                             onClick = {
-                                if (currentRoute != item.route) {
-                                    navController.navigate(item.route) {
-                                        popUpTo(Routes.DASHBOARD) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
                                     }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
                             },
                             icon = { Icon(item.icon, contentDescription = item.label) },
