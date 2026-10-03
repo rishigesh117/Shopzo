@@ -54,8 +54,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: "Shopzo App Update v1.0.10"
-          body: "Direct download link for Shopzo Android APK v1.0.10 (versionCode 10)."
+          name: "Shopzo App Update v1.0.11"
+          body: "Direct download link for Shopzo Android APK v1.0.11 (versionCode 11)."
           files: app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

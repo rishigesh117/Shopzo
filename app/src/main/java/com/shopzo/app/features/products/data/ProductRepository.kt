@@ -5,6 +5,7 @@ import com.shopzo.app.core.database.entity.CategoryEntity
 import com.shopzo.app.core.database.entity.ProductEntity
 import com.shopzo.app.core.database.entity.SyncQueueEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -57,7 +58,31 @@ class ProductRepository(
 
     // Categories
     fun getCategoriesByShop(shopId: String): Flow<List<CategoryEntity>> =
-        categoryDao.getCategoriesByShop(shopId)
+        categoryDao.getCategoriesByShop(shopId).onStart {
+            ensureDefaultCategories(shopId)
+        }
+
+    suspend fun ensureDefaultCategories(shopId: String) {
+        if (shopId.isBlank()) return
+        try {
+            val count = categoryDao.countByShop(shopId)
+            if (count == 0) {
+                val defaultCategories = listOf("General", "Groceries", "Electronics", "Clothing", "Services", "Others")
+                defaultCategories.forEach { name ->
+                    val category = CategoryEntity(
+                        id = UUID.randomUUID().toString(),
+                        name = name,
+                        shopId = shopId,
+                        createdAt = System.currentTimeMillis()
+                    )
+                    categoryDao.insert(category)
+                    enqueueSync("CATEGORY", category.id, "CREATE", json.encodeToString(category), shopId)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     suspend fun getCategoryById(categoryId: String): CategoryEntity? =
         categoryDao.getCategoryById(categoryId)

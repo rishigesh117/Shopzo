@@ -82,7 +82,14 @@ fun ShopzoNavGraph() {
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-    val showBottomNav = currentRoute != null && currentRoute !in authAndOnboardingRoutes
+    val topLevelRoutes = setOf(
+        Routes.DASHBOARD,
+        Routes.BILLS,
+        Routes.PRODUCTS,
+        Routes.CUSTOMERS,
+        Routes.MORE
+    )
+    val showBottomNav = currentRoute in topLevelRoutes
 
     // Session data for ViewModels
     var userName by remember { mutableStateOf("") }
@@ -105,18 +112,12 @@ fun ShopzoNavGraph() {
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomNav) {
                 NavigationBar {
                     bottomNavItems.forEach { item ->
-                        val isSelected = when (item.route) {
-                            Routes.DASHBOARD -> currentRoute == Routes.DASHBOARD
-                            Routes.BILLS -> currentRoute in setOf(Routes.BILLS, Routes.NEW_BILL, Routes.BILL_DETAIL, Routes.RECEIPT)
-                            Routes.PRODUCTS -> currentRoute in setOf(Routes.PRODUCTS, Routes.ADD_PRODUCT, Routes.EDIT_PRODUCT, Routes.PRODUCT_DETAIL, Routes.CATEGORIES, Routes.RESTOCK, Routes.STOCK_ADJUSTMENT, Routes.STOCK_HISTORY)
-                            Routes.CUSTOMERS -> currentRoute in setOf(Routes.CUSTOMERS, Routes.CUSTOMER_DETAIL)
-                            Routes.MORE -> currentRoute in setOf(Routes.MORE, Routes.SETTINGS, Routes.SHOP_SETTINGS, Routes.STAFF_LIST, Routes.ADD_STAFF, Routes.EDIT_STAFF, Routes.STAFF_PERMISSIONS, Routes.REPORTS, Routes.RETURNS, Routes.PAYMENTS)
-                            else -> currentRoute == item.route
-                        }
+                        val isSelected = currentRoute == item.route
                         NavigationBarItem(
                             selected = isSelected,
                             onClick = {

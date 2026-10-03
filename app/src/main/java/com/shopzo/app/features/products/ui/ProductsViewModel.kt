@@ -30,6 +30,10 @@ class ProductsViewModel(
 
     val categories: StateFlow<List<CategoryEntity>> = _shopId.flatMapLatest { shopId ->
         if (shopId.isNotEmpty()) productRepository.getCategoriesByShop(shopId) else flowOf(emptyList())
+    }.onEach { list ->
+        if (selectedCategoryId.isEmpty() && list.isNotEmpty()) {
+            selectedCategoryId = list.first().id
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val allProducts: StateFlow<List<ProductEntity>> = _shopId.flatMapLatest { shopId ->
@@ -184,9 +188,26 @@ class ProductsViewModel(
         categoryError = null
         viewModelScope.launch {
             try {
-                productRepository.addCategory(newCategoryName, _shopId.value)
+                val cat = productRepository.addCategory(newCategoryName, _shopId.value)
+                selectedCategoryId = cat.id
                 newCategoryName = ""
                 onSuccess()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                categoryError = e.localizedMessage ?: "Failed to add category"
+            }
+        }
+    }
+
+    fun addCategoryInline(categoryName: String, onSuccess: (String) -> Unit) {
+        val error = ValidationUtils.validateCategoryName(categoryName)
+        if (error != null) { categoryError = error; return }
+        categoryError = null
+        viewModelScope.launch {
+            try {
+                val cat = productRepository.addCategory(categoryName, _shopId.value)
+                selectedCategoryId = cat.id
+                onSuccess(cat.id)
             } catch (e: Exception) {
                 e.printStackTrace()
                 categoryError = e.localizedMessage ?: "Failed to add category"

@@ -8,8 +8,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
@@ -31,12 +33,55 @@ fun AddEditProductScreen(
     val isEdit = productId != null
     var unitExpanded by remember { mutableStateOf(false) }
     var categoryExpanded by remember { mutableStateOf(false) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var inlineCategoryName by remember { mutableStateOf("") }
+    var inlineCategoryError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(productId) {
         if (productId != null) viewModel.loadProductForEdit(productId)
     }
 
+    if (showAddCategoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddCategoryDialog = false },
+            title = { Text("Add New Category") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = inlineCategoryName,
+                        onValueChange = { inlineCategoryName = it; inlineCategoryError = null },
+                        label = { Text("Category Name *") },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    inlineCategoryError?.let { err ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (inlineCategoryName.isBlank()) {
+                            inlineCategoryError = "Category name cannot be empty"
+                        } else {
+                            viewModel.addCategoryInline(inlineCategoryName) { newId ->
+                                viewModel.selectedCategoryId = newId
+                                showAddCategoryDialog = false
+                            }
+                        }
+                    }
+                ) { Text("Add") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddCategoryDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text(if (isEdit) "Edit Product" else "Add Product") },
@@ -44,55 +89,87 @@ fun AddEditProductScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { padding ->
-        Column(
+        Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp)
+                .padding(padding),
+            color = MaterialTheme.colorScheme.background
         ) {
-            // Product Name
-            OutlinedTextField(
-                value = viewModel.productName,
-                onValueChange = { viewModel.productName = it; viewModel.clearError() },
-                label = { Text("Product Name *") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Category Dropdown
-            ExposedDropdownMenuBox(expanded = categoryExpanded, onExpandedChange = { categoryExpanded = it }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp)
+            ) {
+                // Product Name
                 OutlinedTextField(
-                    value = categories.find { it.id == viewModel.selectedCategoryId }?.name ?: "",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Category *") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    value = viewModel.productName,
+                    onValueChange = { viewModel.productName = it; viewModel.clearError() },
+                    label = { Text("Product Name *") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium
                 )
-                ExposedDropdownMenu(expanded = categoryExpanded, onDismissRequest = { categoryExpanded = false }) {
-                    categories.forEach { cat ->
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Category Dropdown
+                ExposedDropdownMenuBox(expanded = categoryExpanded, onExpandedChange = { categoryExpanded = it }) {
+                    OutlinedTextField(
+                        value = categories.find { it.id == viewModel.selectedCategoryId }?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category *") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    ExposedDropdownMenu(expanded = categoryExpanded, onDismissRequest = { categoryExpanded = false }) {
+                        if (categories.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("No categories found", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                onClick = {},
+                                enabled = false
+                            )
+                        } else {
+                            categories.forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(cat.name) },
+                                    onClick = {
+                                        viewModel.selectedCategoryId = cat.id
+                                        categoryExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                        HorizontalDivider()
                         DropdownMenuItem(
-                            text = { Text(cat.name) },
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("+ Add New Category", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                }
+                            },
                             onClick = {
-                                viewModel.selectedCategoryId = cat.id
                                 categoryExpanded = false
+                                inlineCategoryName = ""
+                                inlineCategoryError = null
+                                showAddCategoryDialog = true
                             }
                         )
                     }
                 }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
             // Brand
             OutlinedTextField(
@@ -206,6 +283,7 @@ fun AddEditProductScreen(
                 } else {
                     Text(if (isEdit) "Update Product" else "Add Product", style = MaterialTheme.typography.titleMedium)
                 }
+            }
             }
         }
     }
