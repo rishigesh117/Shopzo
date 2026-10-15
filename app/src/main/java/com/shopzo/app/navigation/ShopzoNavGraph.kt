@@ -94,6 +94,8 @@ fun ShopzoNavGraph() {
     // Session data for ViewModels
     var userName by remember { mutableStateOf("") }
     var shopId by remember { mutableStateOf("") }
+    var userRole by remember { mutableStateOf("OWNER") }
+    var shopName by remember { mutableStateOf("") }
 
     fun safePopBack(fallbackRoute: String = Routes.DASHBOARD) {
         if (!navController.popBackStack()) {
@@ -108,6 +110,13 @@ fun ShopzoNavGraph() {
         app.sessionManager.sessionFlow.collect { session ->
             userName = session?.userName ?: ""
             shopId = session?.shopId ?: ""
+            userRole = session?.userRole?.name ?: "OWNER"
+            session?.shopId?.ifBlank { null }?.let { currentShopId ->
+                val shop = app.shopRepository.getShopById(currentShopId)
+                if (shop != null) {
+                    shopName = shop.shopName
+                }
+            }
         }
     }
 
@@ -301,6 +310,9 @@ fun ShopzoNavGraph() {
             }
             composable(Routes.MORE) {
                 MoreScreen(
+                    userName = userName,
+                    userRole = userRole,
+                    shopName = shopName,
                     onNavigateToStaff = { navController.navigate(Routes.STAFF_LIST) },
                     onNavigateToCategories = { navController.navigate(Routes.CATEGORIES) },
                     onNavigateToPayments = { navController.navigate(Routes.PAYMENTS) },
@@ -410,6 +422,17 @@ fun ShopzoNavGraph() {
                     shopRepository = app.shopRepository,
                     syncManager = app.syncManager,
                     backupViewModel = backupVm,
+                    fallbackOwnerName = userName,
+                    onResetAllData = {
+                        scope.launch {
+                            try {
+                                app.apiService.resetAllTestingData()
+                            } catch (_: Exception) {}
+                            app.database.clearAllTables()
+                            app.sessionManager.clearSession()
+                            navController.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
+                        }
+                    },
                     onNavigateBack = { safePopBack(Routes.MORE) }
                 )
             }

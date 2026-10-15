@@ -11,6 +11,8 @@ function mapShopRow(row: any): any {
     shopCode: row.shop_code ?? row.shopCode ?? '',
     name: row.name,
     ownerId: row.owner_id ?? row.ownerId ?? '',
+    ownerName: row.owner_name ?? row.ownerName ?? '',
+    ownerMobile: row.owner_mobile ?? row.ownerMobile ?? '',
     address: row.address ?? null,
     createdAt: row.created_at ?? row.createdAt ?? null,
     updatedAt: row.updated_at ?? row.updatedAt ?? null,
@@ -91,14 +93,21 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     const userShops: any[] = [];
     for (const shop of memoryDb.shops.values()) {
       if (shop.ownerId === targetUser.id) {
-        userShops.push({ ...shop, role: 'OWNER' });
+        userShops.push({ ...shop, ownerName: targetUser.name, ownerMobile: targetUser.mobileNumber, role: 'OWNER' });
       }
     }
     for (const perm of memoryDb.staffPermissions.values()) {
       if (perm.userId === targetUser.id) {
         const shop = memoryDb.shops.get(perm.shopId);
         if (shop && !userShops.some(s => s.id === shop.id)) {
-          userShops.push({ ...shop, role: perm.role || 'STAFF', permissions: perm.permissions });
+          const ownerUser = memoryDb.users.get(shop.ownerId);
+          userShops.push({
+            ...shop,
+            ownerName: ownerUser?.name || '',
+            ownerMobile: ownerUser?.mobileNumber || '',
+            role: perm.role || 'STAFF',
+            permissions: perm.permissions
+          });
         }
       }
     }
@@ -120,11 +129,18 @@ export async function login(req: AuthenticatedRequest, res: Response) {
 
     const token = generateToken({ userId: user.id, mobileNumber: user.mobile_number, name: user.name });
 
-    // Fetch shops for this user
+    // Fetch shops for this user with owner name
     const shopsRes = await pool.query(
-      `SELECT s.*, 'OWNER' as role FROM shops s WHERE s.owner_id = $1
+      `SELECT s.*, u.name as owner_name, u.mobile_number as owner_mobile, 'OWNER' as role
+       FROM shops s
+       JOIN users u ON s.owner_id = u.id
+       WHERE s.owner_id = $1
        UNION
-       SELECT s.*, sp.role FROM shops s JOIN staff_permissions sp ON s.id = sp.shop_id WHERE sp.user_id = $1`,
+       SELECT s.*, u.name as owner_name, u.mobile_number as owner_mobile, sp.role
+       FROM shops s
+       JOIN users u ON s.owner_id = u.id
+       JOIN staff_permissions sp ON s.id = sp.shop_id
+       WHERE sp.user_id = $1`,
       [user.id]
     );
 

@@ -1,12 +1,16 @@
 package com.shopzo.app.features.settings.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.AssignmentReturn
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +23,9 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoreScreen(
+    userName: String = "",
+    userRole: String = "OWNER",
+    shopName: String = "",
     onNavigateToStaff: () -> Unit,
     onNavigateToCategories: () -> Unit,
     onNavigateToPayments: () -> Unit,
@@ -44,7 +51,7 @@ fun MoreScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("More", fontWeight = FontWeight.Bold) }) }
+        topBar = { TopAppBar(title = { Text("Settings & More", fontWeight = FontWeight.Bold) }) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -52,6 +59,60 @@ fun MoreScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
+            // Profile Card showing logged in Owner Name and Role
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Filled.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (userName.isNotBlank()) userName else "Store Owner",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        val roleDisplay = if (userRole.equals("OWNER", ignoreCase = true)) "Owner" else "Staff"
+                        val subtitle = if (shopName.isNotBlank()) "$roleDisplay • $shopName" else roleDisplay
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             MoreMenuItem(
                 icon = Icons.Outlined.People,
                 title = "Manage Staff",
@@ -87,7 +148,7 @@ fun MoreScreen(
             MoreMenuItem(
                 icon = Icons.Outlined.Store,
                 title = "Shop Settings",
-                subtitle = "View shop information",
+                subtitle = "View shop details, owner info, and backup options",
                 onClick = onNavigateToShopSettings
             )
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))

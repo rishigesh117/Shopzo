@@ -92,11 +92,18 @@ class AuthRepository(
                     userDao.insert(user)
 
                     if (targetShop != null && shopDao != null) {
+                        val ownerName = if (targetShop.ownerId == body.user.id) {
+                            body.user.name
+                        } else {
+                            targetShop.ownerName?.ifBlank { null } ?: body.user.name
+                        }
+                        val ownerMobile = targetShop.ownerMobile?.ifBlank { null } ?: cleanMobile
+
                         val shopEntity = ShopEntity(
                             id = targetShop.id,
                             shopName = targetShop.name,
-                            ownerName = "",
-                            mobileNumber = cleanMobile,
+                            ownerName = ownerName,
+                            mobileNumber = ownerMobile,
                             address = targetShop.address,
                             shopCode = targetShop.shopCode,
                             ownerId = targetShop.ownerId,

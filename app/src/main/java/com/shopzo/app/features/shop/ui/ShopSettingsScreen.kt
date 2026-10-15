@@ -28,6 +28,8 @@ fun ShopSettingsScreen(
     shopRepository: ShopRepository,
     syncManager: SyncManager? = null,
     backupViewModel: BackupViewModel? = null,
+    fallbackOwnerName: String = "",
+    onResetAllData: (() -> Unit)? = null,
     onNavigateBack: () -> Unit
 ) {
     var shop by remember { mutableStateOf<ShopEntity?>(null) }
@@ -35,6 +37,7 @@ fun ShopSettingsScreen(
     val backupUiState by backupViewModel?.uiState?.collectAsState() ?: remember { mutableStateOf(com.shopzo.app.features.backup.ui.BackupUiState()) }
 
     var showRestoreConfirmDialog by remember { mutableStateOf(false) }
+    var showResetConfirmDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(shopId) {
         shopRepository.getShopFlow(shopId).collectLatest { shop = it }
@@ -204,11 +207,56 @@ fun ShopSettingsScreen(
                 Text("Shop Details", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(16.dp))
 
+                val ownerDisplayName = s.ownerName.ifBlank {
+                    fallbackOwnerName.ifBlank { "Owner" }
+                }
+
                 ShopInfoRow(Icons.Outlined.Store, "Shop Name", s.shopName)
-                ShopInfoRow(Icons.Outlined.Person, "Owner", s.ownerName)
+                ShopInfoRow(Icons.Outlined.Person, "Owner", ownerDisplayName)
                 ShopInfoRow(Icons.Outlined.Phone, "Mobile", s.mobileNumber)
                 if (!s.address.isNullOrBlank()) {
                     ShopInfoRow(Icons.Outlined.LocationOn, "Address", s.address)
+                }
+
+                // Reset Testing Data Section
+                if (onResetAllData != null) {
+                    Spacer(modifier = Modifier.height(28.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Clear All Testing Data",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Delete all test customers, testing accounts, bills, and products to start fresh for your real customer.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { showResetConfirmDialog = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Outlined.DeleteSweep, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Wipe Testing Data & Reset App")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -238,6 +286,33 @@ fun ShopSettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showRestoreConfirmDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Confirmation Dialog before Wiping Testing Data
+    if (showResetConfirmDialog && onResetAllData != null) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirmDialog = false },
+            title = { Text("Reset All Testing Data?", color = MaterialTheme.colorScheme.error) },
+            text = {
+                Text("This will permanently clear all testing accounts, test customers, bills, products, and offline data so your customer can start clean. This action cannot be undone.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showResetConfirmDialog = false
+                        onResetAllData()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Yes, Delete All & Reset")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetConfirmDialog = false }) {
                     Text("Cancel")
                 }
             }

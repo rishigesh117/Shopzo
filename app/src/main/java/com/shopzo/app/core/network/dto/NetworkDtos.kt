@@ -34,6 +34,8 @@ data class ShopDto(
     val shopCode: String = "",
     val name: String,
     val ownerId: String = "",
+    val ownerName: String? = null,
+    val ownerMobile: String? = null,
     val address: String? = null,
     val role: String? = null,
     val createdAt: Long? = null,

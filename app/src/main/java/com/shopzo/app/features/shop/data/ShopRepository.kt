@@ -11,6 +11,8 @@ import com.shopzo.app.core.security.SessionManager
 import com.shopzo.app.core.sync.SyncRepository
 import com.shopzo.app.core.utils.ShopCodeGenerator
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
@@ -114,9 +116,34 @@ class ShopRepository(
         }
     }
 
-    suspend fun getShopByOwner(ownerId: String): ShopEntity? = shopDao.getShopByOwner(ownerId)
+    suspend fun getShopByOwner(ownerId: String): ShopEntity? {
+        val shop = shopDao.getShopByOwner(ownerId) ?: return null
+        return ensureOwnerDetails(shop)
+    }
 
-    suspend fun getShopById(shopId: String): ShopEntity? = shopDao.getShopById(shopId)
+    suspend fun getShopById(shopId: String): ShopEntity? {
+        val shop = shopDao.getShopById(shopId) ?: return null
+        return ensureOwnerDetails(shop)
+    }
 
-    fun getShopFlow(shopId: String): Flow<ShopEntity?> = shopDao.getShopFlow(shopId)
+    fun getShopFlow(shopId: String): Flow<ShopEntity?> = shopDao.getShopFlow(shopId).map { shop ->
+        if (shop != null) ensureOwnerDetails(shop) else null
+    }
+
+    private suspend fun ensureOwnerDetails(shop: ShopEntity): ShopEntity {
+        if (shop.ownerName.isBlank()) {
+            val owner = userDao.getUserById(shop.ownerId)
+            val sessionName = sessionManager?.sessionFlow?.firstOrNull()?.userName
+            val resolvedName = owner?.name?.ifBlank { null } ?: sessionName?.ifBlank { null }
+            if (resolvedName != null) {
+                val updatedShop = shop.copy(
+                    ownerName = resolvedName,
+                    mobileNumber = if (shop.mobileNumber.isBlank()) (owner?.mobileNumber ?: "") else shop.mobileNumber
+                )
+                shopDao.insert(updatedShop)
+                return updatedShop
+            }
+        }
+        return shop
+    }
 }

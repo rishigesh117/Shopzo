@@ -64,4 +64,8 @@ interface ShopzoApiService {
         @Header("X-Shop-Id") shopId: String,
         @Query("since") since: Long
     ): Response<SyncPullResponse>
+
+    // Admin / Testing Data Reset
+    @POST("api/admin/reset-all-data")
+    suspend fun resetAllTestingData(): Response<Unit>
 }

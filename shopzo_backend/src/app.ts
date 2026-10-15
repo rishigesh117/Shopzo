@@ -5,6 +5,7 @@ import shopRoutes from './routes/shopRoutes';
 import staffRoutes from './routes/staffRoutes';
 import productRoutes from './routes/productRoutes';
 import syncRoutes from './routes/syncRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use('/api/shops', shopRoutes);
 app.use('/api/shops/:shopId/staff', staffRoutes);
 app.use('/api/shops/:shopId/products', productRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Healthcheck
 app.get('/health', (req, res) => {

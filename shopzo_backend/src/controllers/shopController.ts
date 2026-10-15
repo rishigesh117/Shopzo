@@ -11,6 +11,8 @@ function mapShopRow(row: any): any {
     shopCode: row.shop_code ?? row.shopCode ?? '',
     name: row.name,
     ownerId: row.owner_id ?? row.ownerId ?? '',
+    ownerName: row.owner_name ?? row.ownerName ?? '',
+    ownerMobile: row.owner_mobile ?? row.ownerMobile ?? '',
     address: row.address ?? null,
     createdAt: row.created_at ?? row.createdAt ?? null,
     updatedAt: row.updated_at ?? row.updatedAt ?? null,
@@ -56,7 +58,19 @@ export async function createShop(req: AuthenticatedRequest, res: Response) {
       updatedAt: now
     });
 
-    return res.status(201).json({ shop });
+    return res.status(201).json({
+      shop: {
+        id: shopId,
+        shopCode,
+        name: name.trim(),
+        address: address ? address.trim() : null,
+        ownerId: req.user.userId,
+        ownerName: req.user.name,
+        ownerMobile: req.user.mobileNumber,
+        createdAt: now,
+        updatedAt: now
+      }
+    });
   }
 
   try {
@@ -72,7 +86,17 @@ export async function createShop(req: AuthenticatedRequest, res: Response) {
     );
 
     return res.status(201).json({
-      shop: { id: shopId, shopCode, name: name.trim(), address, ownerId: req.user.userId, createdAt: now, updatedAt: now }
+      shop: {
+        id: shopId,
+        shopCode,
+        name: name.trim(),
+        address,
+        ownerId: req.user.userId,
+        ownerName: req.user.name,
+        ownerMobile: req.user.mobileNumber,
+        createdAt: now,
+        updatedAt: now
+      }
     });
   } catch (err) {
     return res.status(500).json({ error: 'Database error creating shop' });
@@ -88,14 +112,21 @@ export async function getMyShops(req: AuthenticatedRequest, res: Response) {
     const userShops: any[] = [];
     for (const shop of memoryDb.shops.values()) {
       if (shop.ownerId === req.user.userId) {
-        userShops.push({ ...shop, role: 'OWNER' });
+        userShops.push({ ...shop, ownerName: req.user.name, ownerMobile: req.user.mobileNumber, role: 'OWNER' });
       }
     }
     for (const perm of memoryDb.staffPermissions.values()) {
       if (perm.userId === req.user.userId) {
         const shop = memoryDb.shops.get(perm.shopId);
         if (shop && !userShops.some(s => s.id === shop.id)) {
-          userShops.push({ ...shop, role: perm.role || 'STAFF', permissions: perm.permissions });
+          const ownerUser = memoryDb.users.get(shop.ownerId);
+          userShops.push({
+            ...shop,
+            ownerName: ownerUser?.name || '',
+            ownerMobile: ownerUser?.mobileNumber || '',
+            role: perm.role || 'STAFF',
+            permissions: perm.permissions
+          });
         }
       }
     }
@@ -104,9 +135,16 @@ export async function getMyShops(req: AuthenticatedRequest, res: Response) {
 
   try {
     const resShops = await pool.query(
-      `SELECT s.*, 'OWNER' as role FROM shops s WHERE s.owner_id = $1
+      `SELECT s.*, u.name as owner_name, u.mobile_number as owner_mobile, 'OWNER' as role
+       FROM shops s
+       JOIN users u ON s.owner_id = u.id
+       WHERE s.owner_id = $1
        UNION
-       SELECT s.*, sp.role FROM shops s JOIN staff_permissions sp ON s.id = sp.shop_id WHERE sp.user_id = $1`,
+       SELECT s.*, u.name as owner_name, u.mobile_number as owner_mobile, sp.role
+       FROM shops s
+       JOIN users u ON s.owner_id = u.id
+       JOIN staff_permissions sp ON s.id = sp.shop_id
+       WHERE sp.user_id = $1`,
       [req.user.userId]
     );
     return res.json({ shops: resShops.rows.map(mapShopRow) });
@@ -126,11 +164,24 @@ export async function getShopById(req: AuthenticatedRequest, res: Response) {
     if (!shop) {
       return res.status(404).json({ error: 'Shop not found' });
     }
-    return res.json({ shop });
+    const ownerUser = memoryDb.users.get(shop.ownerId);
+    return res.json({
+      shop: {
+        ...shop,
+        ownerName: ownerUser?.name || '',
+        ownerMobile: ownerUser?.mobileNumber || ''
+      }
+    });
   }
 
   try {
-    const resShop = await pool.query('SELECT * FROM shops WHERE id = $1', [shopId]);
+    const resShop = await pool.query(
+      `SELECT s.*, u.name as owner_name, u.mobile_number as owner_mobile
+       FROM shops s
+       LEFT JOIN users u ON s.owner_id = u.id
+       WHERE s.id = $1`,
+      [shopId]
+    );
     if (resShop.rows.length === 0) {
       return res.status(404).json({ error: 'Shop not found' });
     }
