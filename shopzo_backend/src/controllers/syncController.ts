@@ -324,7 +324,30 @@ export async function pullSync(req: AuthenticatedRequest, res: Response) {
       }
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Database error during pull sync' });
+    console.warn('Database error during pull sync, falling back to memory store:', err);
+    const filterByShopAndSince = (map: Map<string, any>, timeField = 'updatedAt') => {
+      const arr: any[] = [];
+      for (const v of map.values()) {
+        if (v.shopId === shopId && (v[timeField] || v.createdAt || 0) >= since) {
+          arr.push(v);
+        }
+      }
+      return arr;
+    };
+
+    return res.json({
+      serverTime,
+      delta: {
+        categories: filterByShopAndSince(memoryDb.categories),
+        products: filterByShopAndSince(memoryDb.products),
+        stockMovements: filterByShopAndSince(memoryDb.stockMovements, 'createdAt'),
+        customers: filterByShopAndSince(memoryDb.customers),
+        bills: filterByShopAndSince(memoryDb.bills),
+        billItems: filterByShopAndSince(memoryDb.billItems, 'createdAt'),
+        payments: filterByShopAndSince(memoryDb.payments, 'createdAt'),
+        returns: filterByShopAndSince(memoryDb.returns, 'createdAt')
+      }
+    });
   }
 }
 

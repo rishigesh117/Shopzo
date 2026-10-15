@@ -1,6 +1,15 @@
 import { User, Shop, Product, Category, Customer, Bill, BillItem, Payment, Staff, SyncOperation } from '../types';
 
-const DEFAULT_API_URL = 'https://shopzo-nine.vercel.app';
+const isLocal = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' || 
+  window.location.hostname === '127.0.0.1' || 
+  window.location.hostname.startsWith('10.') || 
+  window.location.hostname.startsWith('192.168.')
+);
+
+const DEFAULT_API_URL = isLocal 
+  ? `http://${window.location.hostname}:3000` 
+  : 'https://shopzo-nine.vercel.app';
 
 export class ApiClient {
   private baseUrl: string;
