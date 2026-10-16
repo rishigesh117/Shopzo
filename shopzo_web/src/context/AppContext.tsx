@@ -119,10 +119,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setIsLoading(true);
       refreshData();
 
-      // Automatically sync every 10 seconds so changes on mobile immediately appear on web
+      // Automatically sync every 5 seconds so changes on mobile immediately appear on web
       const interval = setInterval(() => {
         refreshData();
-      }, 10000);
+      }, 5000);
 
       return () => clearInterval(interval);
     } else {

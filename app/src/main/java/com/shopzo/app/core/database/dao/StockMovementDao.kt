@@ -6,10 +6,12 @@ import androidx.room.Query
 import com.shopzo.app.core.database.entity.StockMovementEntity
 import kotlinx.coroutines.flow.Flow
 
+import androidx.room.OnConflictStrategy
+
 @Dao
 interface StockMovementDao {
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(movement: StockMovementEntity)
 
     suspend fun insertStockMovement(movement: StockMovementEntity) = insert(movement)

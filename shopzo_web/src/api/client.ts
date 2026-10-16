@@ -1,21 +1,19 @@
 import { User, Shop, Product, Category, Customer, Bill, BillItem, Payment, Staff, SyncOperation } from '../types';
 
-const isLocal = typeof window !== 'undefined' && (
-  window.location.hostname === 'localhost' || 
-  window.location.hostname === '127.0.0.1' || 
-  window.location.hostname.startsWith('10.') || 
-  window.location.hostname.startsWith('192.168.')
-);
-
-const DEFAULT_API_URL = isLocal 
-  ? `http://${window.location.hostname}:3000` 
-  : 'https://shopzo-nine.vercel.app';
+const DEFAULT_API_URL = 'https://shopzo-nine.vercel.app';
 
 export class ApiClient {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = localStorage.getItem('shopzo_api_url') || import.meta.env.VITE_API_URL || DEFAULT_API_URL;
+    let saved = localStorage.getItem('shopzo_api_url');
+    // Clear legacy localhost backend override so web uses the unified cloud backend
+    if (saved && (saved.includes('localhost') || saved.includes('127.0.0.1') || saved.includes(':3000'))) {
+      saved = null;
+      localStorage.removeItem('shopzo_api_url');
+    }
+
+    this.baseUrl = saved || import.meta.env.VITE_API_URL || DEFAULT_API_URL;
     // Strip trailing slash
     if (this.baseUrl.endsWith('/')) {
       this.baseUrl = this.baseUrl.slice(0, -1);

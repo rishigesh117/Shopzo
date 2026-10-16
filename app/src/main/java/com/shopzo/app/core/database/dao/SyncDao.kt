@@ -17,8 +17,8 @@ interface SyncDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(queueItems: List<SyncQueueEntity>)
 
-    @Query("SELECT * FROM sync_queue WHERE shopId = :shopId AND status = 'PENDING' ORDER BY createdAt ASC LIMIT :limit")
-    suspend fun getPendingItems(shopId: String, limit: Int = 50): List<SyncQueueEntity>
+    @Query("SELECT * FROM sync_queue WHERE (shopId = :shopId OR shopId = '' OR shopId = 'shop-default-001') AND status = 'PENDING' ORDER BY createdAt ASC LIMIT :limit")
+    suspend fun getPendingItems(shopId: String, limit: Int = 100): List<SyncQueueEntity>
 
     @Query("SELECT * FROM sync_queue WHERE shopId = :shopId AND status = 'PENDING' ORDER BY createdAt ASC")
     fun observePendingItems(shopId: String): Flow<List<SyncQueueEntity>>

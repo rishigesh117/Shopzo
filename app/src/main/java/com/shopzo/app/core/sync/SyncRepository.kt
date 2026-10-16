@@ -53,7 +53,7 @@ class SyncRepository(
                 entityId = item.entityId,
                 operationType = item.operationType,
                 payload = item.payloadJson,
-                shopId = item.shopId,
+                shopId = shopId,
                 createdAt = item.createdAt
             )
         }
@@ -87,7 +87,7 @@ class SyncRepository(
                     val entity = CategoryEntity(
                         id = c.id,
                         name = c.name,
-                        shopId = c.shopId,
+                        shopId = shopId,
                         createdAt = c.createdAt
                     )
                     database.categoryDao().insert(entity)
@@ -105,7 +105,7 @@ class SyncRepository(
                         quantity = p.quantity,
                         unit = p.unit,
                         minStockLevel = p.minStockLevel,
-                        shopId = p.shopId,
+                        shopId = shopId,
                         createdAt = p.createdAt,
                         updatedAt = p.updatedAt
                     )
@@ -123,7 +123,7 @@ class SyncRepository(
                         outstandingDuePaise = cust.outstandingDuePaise,
                         createdAt = cust.createdAt,
                         updatedAt = cust.updatedAt,
-                        shopId = cust.shopId
+                        shopId = shopId
                     )
                     database.customerDao().insertCustomer(entity)
                 }
@@ -142,7 +142,7 @@ class SyncRepository(
                         pendingAmountPaise = b.pendingAmountPaise,
                         paymentStatus = b.paymentStatus,
                         createdAt = b.createdAt,
-                        shopId = b.shopId
+                        shopId = shopId
                     )
                     database.billDao().insertBill(entity)
                 }
@@ -159,7 +159,7 @@ class SyncRepository(
                         sellingPricePaise = bi.sellingPricePaise,
                         buyingPricePaise = bi.buyingPricePaise,
                         subtotalPaise = bi.subtotalPaise,
-                        shopId = bi.shopId
+                        shopId = shopId
                     )
                     database.billItemDao().insertBillItem(entity)
                 }
@@ -173,7 +173,7 @@ class SyncRepository(
                         amountPaise = pay.amountPaise,
                         paymentMethod = pay.paymentMethod,
                         createdAt = pay.createdAt,
-                        shopId = pay.shopId
+                        shopId = shopId
                     )
                     database.paymentDao().insertPayment(entity)
                 }
@@ -190,7 +190,7 @@ class SyncRepository(
                         stockRestored = ret.stockRestored,
                         reason = ret.reason ?: "",
                         createdAt = ret.createdAt,
-                        shopId = ret.shopId
+                        shopId = shopId
                     )
                     database.returnDao().insertReturn(entity)
                 }
@@ -208,7 +208,7 @@ class SyncRepository(
                         supplier = null,
                         reason = sm.reason ?: "",
                         notes = "Cloud Sync Movement",
-                        shopId = sm.shopId,
+                        shopId = shopId,
                         createdAt = sm.createdAt
                     )
                     database.stockMovementDao().insert(entity)

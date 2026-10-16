@@ -7,10 +7,12 @@ import androidx.room.Update
 import com.shopzo.app.core.database.entity.ProductEntity
 import kotlinx.coroutines.flow.Flow
 
+import androidx.room.OnConflictStrategy
+
 @Dao
 interface ProductDao {
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(product: ProductEntity)
 
     @Update

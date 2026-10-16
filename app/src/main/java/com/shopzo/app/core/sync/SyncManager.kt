@@ -33,9 +33,12 @@ class SyncManager(
     val syncStatus: StateFlow<SyncStatusInfo> = _syncStatus.asStateFlow()
 
     init {
+        SyncTrigger.onSyncNeeded = {
+            syncNow()
+        }
         scope.launch {
             while (isActive) {
-                delay(15_000)
+                delay(10_000)
                 try {
                     syncNow()
                 } catch (_: Exception) {}

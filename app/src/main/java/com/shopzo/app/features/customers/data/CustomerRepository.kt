@@ -106,6 +106,7 @@ class CustomerRepository(
                     createdAt = System.currentTimeMillis()
                 )
             )
+            com.shopzo.app.core.sync.SyncTrigger.trigger()
         } catch (e: Exception) {
             e.printStackTrace()
         }
