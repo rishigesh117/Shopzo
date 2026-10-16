@@ -89,40 +89,39 @@ class InMemoryDb {
     // Bcrypt hash for 'Sivaelectricals@117'
     const defaultHash = '$2a$10$3lQyBiZSAfU5ZSFyk3TEguWuP4s6zXfex8wPu8YCFPV53LnGOdK5O';
 
-    if (!this.users.has(userId)) {
-      this.users.set(userId, {
-        id: userId,
-        mobileNumber: '8870635581',
-        name: 'Rishigesh',
-        passwordHash: defaultHash,
-        createdAt: now,
-        updatedAt: now
-      });
-    }
+    const userObj = {
+      id: userId,
+      mobileNumber: '8870635581',
+      name: 'Rishi',
+      passwordHash: defaultHash,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.users.set(userId, userObj);
 
-    if (!this.shops.has(shopId)) {
-      this.shops.set(shopId, {
-        id: shopId,
-        shopCode: 'SHOPZO1',
-        name: 'Shopzo Main Store',
-        ownerId: userId,
-        ownerName: 'Rishigesh',
-        ownerMobile: '8870635581',
-        address: 'Main Bazaar Road',
-        createdAt: now,
-        updatedAt: now
-      });
+    const shopObj = {
+      id: shopId,
+      shopCode: 'SZ-5R5SFJ',
+      name: 'Siva electricals',
+      ownerId: userId,
+      ownerName: 'Rishi',
+      ownerMobile: '8870635581',
+      address: 'Main Bazaar Road',
+      createdAt: now,
+      updatedAt: now
+    };
+    this.shops.set(shopId, shopObj);
 
-      this.staffPermissions.set(`${shopId}:${userId}`, {
-        id: 'perm-owner-001',
-        shopId,
-        userId,
-        role: 'OWNER',
-        permissions: ['ALL'],
-        createdAt: now,
-        updatedAt: now
-      });
-    }
+    this.staffPermissions.set(`${shopId}:${userId}`, {
+      id: 'perm-owner-001',
+      shopId,
+      userId,
+      role: 'OWNER',
+      permissions: ['ALL'],
+      createdAt: now,
+      updatedAt: now
+    });
+    this.saveToDisk();
   }
 
   clear() {

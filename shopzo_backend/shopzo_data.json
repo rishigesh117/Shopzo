@@ -1,0 +1,55 @@
+{
+  "users": [
+    [
+      "user-owner-8870635581",
+      {
+        "id": "user-owner-8870635581",
+        "mobileNumber": "8870635581",
+        "name": "Rishi",
+        "passwordHash": "$2a$10$3lQyBiZSAfU5ZSFyk3TEguWuP4s6zXfex8wPu8YCFPV53LnGOdK5O",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053
+      }
+    ]
+  ],
+  "shops": [
+    [
+      "shop-default-001",
+      {
+        "id": "shop-default-001",
+        "shopCode": "SZ-5R5SFJ",
+        "name": "Siva electricals",
+        "ownerId": "user-owner-8870635581",
+        "ownerName": "Rishi",
+        "ownerMobile": "8870635581",
+        "address": "Main Bazaar Road",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053
+      }
+    ]
+  ],
+  "staffPermissions": [
+    [
+      "shop-default-001:user-owner-8870635581",
+      {
+        "id": "perm-owner-001",
+        "shopId": "shop-default-001",
+        "userId": "user-owner-8870635581",
+        "role": "OWNER",
+        "permissions": [
+          "ALL"
+        ],
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053
+      }
+    ]
+  ],
+  "categories": [],
+  "products": [],
+  "stockMovements": [],
+  "customers": [],
+  "bills": [],
+  "billItems": [],
+  "payments": [],
+  "returns": []
+}

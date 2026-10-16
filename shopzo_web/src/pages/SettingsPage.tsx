@@ -11,10 +11,13 @@ import {
   MapPin, 
   PlusCircle, 
   Check, 
-  Laptop
+  Laptop,
+  Download,
+  Upload
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
+import { api } from '../api/client';
 import { CreateShopModal } from '../components/CreateShopModal';
 import { formatDate } from '../utils/format';
 
@@ -35,6 +38,82 @@ export const SettingsPage: React.FC = () => {
   const handleClearCache = () => {
     if (confirm('Do you want to refresh cached data from the cloud server? This will keep all your database records intact.')) {
       window.location.reload();
+    }
+  };
+
+  const handleExportBackup = () => {
+    if (!currentShop) return;
+    const backupData = {
+      version: 1,
+      exportedAt: Date.now(),
+      shopId: currentShop.id,
+      shopName: currentShop.name,
+      shopCode: currentShop.shopCode,
+      products,
+      customers,
+      bills,
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Shopzo_Backup_${currentShop.shopCode}_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Backup exported successfully', 'success');
+  };
+
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentShop) return;
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+      if (!backup.products && !backup.customers && !backup.bills) {
+        throw new Error('Invalid backup file format');
+      }
+      const operations: any[] = [];
+      const now = Date.now();
+      (backup.products || []).forEach((p: any) => {
+        operations.push({
+          id: p.id || Math.random().toString(),
+          entityType: 'PRODUCT',
+          entityId: p.id,
+          operationType: 'CREATE',
+          payload: p,
+          shopId: currentShop.id,
+          createdAt: now,
+        });
+      });
+      (backup.customers || []).forEach((c: any) => {
+        operations.push({
+          id: c.id || Math.random().toString(),
+          entityType: 'CUSTOMER',
+          entityId: c.id,
+          operationType: 'CREATE',
+          payload: c,
+          shopId: currentShop.id,
+          createdAt: now,
+        });
+      });
+      (backup.bills || []).forEach((b: any) => {
+        operations.push({
+          id: b.id || Math.random().toString(),
+          entityType: 'BILL',
+          entityId: b.id,
+          operationType: 'CREATE',
+          payload: b,
+          shopId: currentShop.id,
+          createdAt: now,
+        });
+      });
+      if (operations.length > 0) {
+        await api.pushSync(currentShop.id, operations);
+        await syncData();
+        showToast(`Successfully restored ${backup.products?.length || 0} products & ${backup.bills?.length || 0} bills!`, 'success');
+      }
+    } catch (err: any) {
+      showToast('Restore failed: ' + (err.message || 'Invalid file'), 'error');
     }
   };
 
@@ -238,6 +317,50 @@ export const SettingsPage: React.FC = () => {
             >
               Reload
             </button>
+          </div>
+        </div>
+
+        {/* Database Backup & Restore (Exact match with Android App) */}
+        <div className="card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
+            <Database size={20} style={{ color: '#0d9488' }} />
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Database Backup & Restore</h2>
+          </div>
+
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '18px', lineHeight: 1.5 }}>
+            Export a safe versioned backup of products, sales, customers, and financial records or restore data from your mobile app.
+          </p>
+
+          <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
+            <button
+              onClick={handleExportBackup}
+              className="btn btn-outline"
+              style={{ flex: 1, gap: '6px' }}
+            >
+              <Download size={15} /> Export
+            </button>
+            <label
+              className="btn"
+              style={{
+                flex: 1,
+                gap: '6px',
+                background: '#eab308',
+                color: '#000000',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Upload size={15} /> Restore
+              <input
+                type="file"
+                accept=".json"
+                style={{ display: 'none' }}
+                onChange={handleImportBackup}
+              />
+            </label>
           </div>
         </div>
 

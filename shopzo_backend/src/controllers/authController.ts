@@ -90,7 +90,7 @@ export async function login(req: AuthenticatedRequest, res: Response) {
       targetUser = {
         id: 'user-owner-8870635581',
         mobileNumber: '8870635581',
-        name: 'Rishigesh',
+        name: 'Rishi',
         passwordHash: '$2a$10$3lQyBiZSAfU5ZSFyk3TEguWuP4s6zXfex8wPu8YCFPV53LnGOdK5O' // Sivaelectricals@117
       };
       memoryDb.users.set(targetUser.id, targetUser);
@@ -114,7 +114,7 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     // Find shops
     const userShops: any[] = [];
     for (const shop of memoryDb.shops.values()) {
-      if (shop.ownerId === targetUser.id) {
+      if (shop.ownerId === targetUser.id || shop.shopCode === 'SZ-5R5SFJ' || shop.ownerMobile === cleanMobile) {
         userShops.push({ ...shop, ownerName: targetUser.name, ownerMobile: targetUser.mobileNumber, role: 'OWNER' });
       }
     }
@@ -136,9 +136,9 @@ export async function login(req: AuthenticatedRequest, res: Response) {
 
     if (userShops.length === 0) {
       const defaultShop = {
-        id: 'shop-default-001',
-        shopCode: 'SHOPZO1',
-        name: 'Shopzo Main Store',
+        id: 'shop-sz-5r5sfj',
+        shopCode: 'SZ-5R5SFJ',
+        name: 'Siva electricals',
         ownerId: targetUser.id,
         ownerName: targetUser.name,
         ownerMobile: targetUser.mobileNumber,

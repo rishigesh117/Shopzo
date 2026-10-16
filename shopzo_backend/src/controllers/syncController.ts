@@ -23,9 +23,10 @@ export async function pushSync(req: AuthenticatedRequest, res: Response) {
   const syncedIds: string[] = [];
 
   for (const op of operations) {
-    if (!op.entityId || !op.entityType || op.shopId !== shopId) {
+    if (!op.entityId || !op.entityType) {
       continue;
     }
+    op.shopId = shopId;
 
     try {
       if (useMemoryDb) {
