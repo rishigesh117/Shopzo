@@ -4,6 +4,8 @@ import { api } from '../api/client';
 import { useAuth } from './AuthContext';
 import { uuid, generateBillNumber } from '../utils/format';
 
+import { DEFAULT_CATEGORIES } from '../components/ProductModal';
+
 interface Toast {
   id: string;
   message: string;
@@ -49,7 +51,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const { currentShop, token } = useAuth();
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [bills, setBills] = useState<Bill[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -69,7 +71,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const refreshData = useCallback(async () => {
     if (!currentShop || !token) return;
-    setIsLoading(true);
     try {
       // 1. Pull core data from cloud sync
       const syncData = await api.pullData(currentShop.id, 0);
@@ -88,7 +89,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }));
 
       setProducts(syncData.products || []);
-      setCategories(syncData.categories || []);
+
+      // Merge server categories with mobile default categories
+      const catMap = new Map<string, Category>();
+      DEFAULT_CATEGORIES.forEach((c) => catMap.set(c.id, c));
+      (syncData.categories || []).forEach((c) => catMap.set(c.id, c));
+      setCategories(Array.from(catMap.values()));
+
       setCustomers(syncData.customers || []);
       setBills(populatedBills.sort((a, b) => b.createdAt - a.createdAt));
       setPayments(syncData.payments || []);
@@ -101,18 +108,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       setLastSyncedAt(Date.now());
     } catch (err: any) {
-      showToast(err.message || 'Failed to sync latest store data.', 'error');
+      // Background poll silently fails on network jitter; explicit sync displays error
     } finally {
       setIsLoading(false);
     }
-  }, [currentShop, token, showToast]);
+  }, [currentShop, token]);
 
   useEffect(() => {
     if (currentShop && token) {
+      setIsLoading(true);
       refreshData();
+
+      // Automatically sync every 10 seconds so changes on mobile immediately appear on web
+      const interval = setInterval(() => {
+        refreshData();
+      }, 10000);
+
+      return () => clearInterval(interval);
     } else {
       setProducts([]);
-      setCategories([]);
+      setCategories(DEFAULT_CATEGORIES);
       setCustomers([]);
       setBills([]);
       setPayments([]);

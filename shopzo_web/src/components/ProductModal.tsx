@@ -1,7 +1,31 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Plus, Check } from 'lucide-react';
 import { Product, Category } from '../types';
 import { parseMoneyToPaise } from '../utils/format';
+
+export const PRODUCT_UNITS = [
+  { value: 'PIECE', label: 'Piece' },
+  { value: 'KG', label: 'Kg' },
+  { value: 'GRAM', label: 'Gram' },
+  { value: 'LITRE', label: 'Litre' },
+  { value: 'ML', label: 'Ml' },
+  { value: 'BOX', label: 'Box' },
+  { value: 'PACKET', label: 'Packet' },
+  { value: 'DOZEN', label: 'Dozen' },
+];
+
+export const DEFAULT_CATEGORIES: Category[] = [
+  { id: 'cat-grocery', name: 'Grocery', shopId: '', createdAt: 0 },
+  { id: 'cat-beverages', name: 'Beverages', shopId: '', createdAt: 0 },
+  { id: 'cat-snacks', name: 'Snacks', shopId: '', createdAt: 0 },
+  { id: 'cat-dairy', name: 'Dairy', shopId: '', createdAt: 0 },
+  { id: 'cat-personal-care', name: 'Personal Care', shopId: '', createdAt: 0 },
+  { id: 'cat-household', name: 'Household', shopId: '', createdAt: 0 },
+  { id: 'cat-stationery', name: 'Stationery', shopId: '', createdAt: 0 },
+  { id: 'cat-fruits-veg', name: 'Fruits & Vegetables', shopId: '', createdAt: 0 },
+  { id: 'cat-cosmetics', name: 'Cosmetics', shopId: '', createdAt: 0 },
+  { id: 'cat-others', name: 'Others', shopId: '', createdAt: 0 },
+];
 
 interface ProductModalProps {
   product?: Product | null;
@@ -13,14 +37,47 @@ interface ProductModalProps {
 export const ProductModal: React.FC<ProductModalProps> = ({ product, categories, onSave, onClose }) => {
   const [name, setName] = useState(product?.name || '');
   const [brand, setBrand] = useState(product?.brand || '');
-  const [categoryId, setCategoryId] = useState(product?.categoryId || (categories[0]?.id || ''));
   const [sellingPrice, setSellingPrice] = useState(product ? (product.sellingPricePaise / 100).toString() : '');
   const [buyingPrice, setBuyingPrice] = useState(product ? (product.buyingPricePaise / 100).toString() : '');
   const [quantity, setQuantity] = useState(product ? product.quantity.toString() : '10');
-  const [unit, setUnit] = useState(product?.unit || 'PCS');
+  const [unit, setUnit] = useState(product?.unit || 'PIECE');
   const [minStockLevel, setMinStockLevel] = useState(product ? product.minStockLevel.toString() : '5');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Custom categories added by merchant
+  const [extraCategories, setExtraCategories] = useState<Category[]>([]);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+
+  // Merge default mobile categories, server categories, and custom added categories
+  const allCategories = useMemo(() => {
+    const map = new Map<string, Category>();
+    DEFAULT_CATEGORIES.forEach((c) => map.set(c.id, c));
+    categories.forEach((c) => map.set(c.id, c));
+    extraCategories.forEach((c) => map.set(c.id, c));
+    return Array.from(map.values());
+  }, [categories, extraCategories]);
+
+  const [categoryId, setCategoryId] = useState(
+    product?.categoryId || (allCategories[0]?.id || 'cat-grocery')
+  );
+
+  const handleCreateCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const catId = `cat-custom-${Date.now()}`;
+    const newCat: Category = {
+      id: catId,
+      name: newCatName.trim(),
+      shopId: '',
+      createdAt: Date.now(),
+    };
+    setExtraCategories((prev) => [...prev, newCat]);
+    setCategoryId(catId);
+    setNewCatName('');
+    setIsAddingCategory(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +101,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, categories,
       await onSave({
         name: name.trim(),
         brand: brand.trim() || null,
-        categoryId: categoryId || 'general',
+        categoryId: categoryId || 'cat-grocery',
         sellingPricePaise: parseMoneyToPaise(sp),
         buyingPricePaise: parseMoneyToPaise(bp),
         quantity: qty,
@@ -61,7 +118,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, categories,
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', borderBottom: '1px solid var(--surface-border)' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>
             {product ? 'Edit Product' : 'Add New Product'}
@@ -83,7 +140,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, categories,
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Basmati Rice 1kg"
+              placeholder="e.g. Basmati Rice 1kg or biscuit"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -96,26 +153,76 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, categories,
               <input
                 type="text"
                 className="form-input"
-                placeholder="e.g. India Gate"
+                placeholder="e.g. Parle, India Gate"
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Category</label>
-              <select
-                className="form-select"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-                {categories.length === 0 && <option value="general">General</option>}
-              </select>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label className="form-label" style={{ marginBottom: 0 }}>Category *</label>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingCategory(!isAddingCategory)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: 0
+                  }}
+                >
+                  <Plus size={13} /> {isAddingCategory ? 'Select List' : 'Add New'}
+                </button>
+              </div>
+
+              {isAddingCategory ? (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="New category..."
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    autoFocus
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateCategory}
+                    className="btn btn-primary btn-sm"
+                    style={{ padding: '6px 10px' }}
+                    title="Add Category"
+                  >
+                    <Check size={16} />
+                  </button>
+                </div>
+              ) : (
+                <select
+                  className="form-select"
+                  value={categoryId}
+                  onChange={(e) => {
+                    if (e.target.value === '__NEW__') {
+                      setIsAddingCategory(true);
+                    } else {
+                      setCategoryId(e.target.value);
+                    }
+                  }}
+                >
+                  {allCategories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                  <option value="__NEW__">+ Add New Category...</option>
+                </select>
+              )}
             </div>
           </div>
 
@@ -148,7 +255,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, categories,
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: '16px' }}>
             <div className="form-group">
               <label className="form-label">Stock Quantity</label>
               <input
@@ -163,13 +270,16 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, categories,
 
             <div className="form-group">
               <label className="form-label">Unit</label>
-              <select className="form-select" value={unit} onChange={(e) => setUnit(e.target.value)}>
-                <option value="PCS">PCS</option>
-                <option value="KG">KG</option>
-                <option value="LTR">LTR</option>
-                <option value="PKT">PKT</option>
-                <option value="BOX">BOX</option>
-                <option value="DOZ">DOZ</option>
+              <select
+                className="form-select"
+                value={unit.toUpperCase()}
+                onChange={(e) => setUnit(e.target.value)}
+              >
+                {PRODUCT_UNITS.map((u) => (
+                  <option key={u.value} value={u.value}>
+                    {u.label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -199,3 +309,4 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, categories,
     </div>
   );
 };
+

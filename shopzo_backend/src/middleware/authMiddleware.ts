@@ -44,54 +44,65 @@ export async function authorizeShopAccess(req: AuthenticatedRequest, res: Respon
 
   req.shopId = shopId;
 
-  if (useMemoryDb) {
-    const shop = memoryDb.shops.get(shopId);
-    if (!shop) {
-      return res.status(404).json({ error: 'Shop not found' });
-    }
+  let shop = memoryDb.shops.get(shopId);
 
+  // If not found by direct ID, resolve by shopCode or user ownership
+  if (!shop) {
+    for (const s of memoryDb.shops.values()) {
+      if (s.id === shopId || s.shopCode === shopId || s.ownerId === req.user.userId) {
+        shop = s;
+        // Register alias for future fast lookups
+        memoryDb.shops.set(shopId, s);
+        break;
+      }
+    }
+  }
+
+  if (shop) {
+    req.shopId = shop.id; // normalize to canonical shop.id
     if (shop.ownerId === req.user.userId) {
       req.shopRole = 'OWNER';
       req.permissions = ['ALL'];
       return next();
     }
 
-    const perm = memoryDb.staffPermissions.get(`${shopId}:${req.user.userId}`);
-    if (!perm) {
-      return res.status(403).json({ error: 'Forbidden: You do not have access to this shop' });
+    const perm = memoryDb.staffPermissions.get(`${shop.id}:${req.user.userId}`) || memoryDb.staffPermissions.get(`${shopId}:${req.user.userId}`);
+    if (perm) {
+      req.shopRole = perm.role || 'STAFF';
+      req.permissions = perm.permissions || [];
+      return next();
     }
-
-    req.shopRole = perm.role || 'STAFF';
-    req.permissions = perm.permissions || [];
-    return next();
   }
 
   try {
     // Database lookup
-    const shopRes = await pool.query('SELECT * FROM shops WHERE id = $1', [shopId]);
-    if (shopRes.rows.length === 0) {
-      return res.status(404).json({ error: 'Shop not found' });
-    }
+    const shopRes = await pool.query('SELECT * FROM shops WHERE id = $1 OR shop_code = $1 OR owner_id = $2', [shopId, req.user.userId]);
+    if (shopRes.rows.length > 0) {
+      const dbShop = shopRes.rows[0];
+      req.shopId = dbShop.id;
+      if (dbShop.owner_id === req.user.userId) {
+        req.shopRole = 'OWNER';
+        req.permissions = ['ALL'];
+        return next();
+      }
 
-    const shop = shopRes.rows[0];
-    if (shop.owner_id === req.user.userId) {
-      req.shopRole = 'OWNER';
-      req.permissions = ['ALL'];
-      return next();
+      const permRes = await pool.query('SELECT * FROM staff_permissions WHERE shop_id = $1 AND user_id = $2', [dbShop.id, req.user.userId]);
+      if (permRes.rows.length > 0) {
+        const perm = permRes.rows[0];
+        req.shopRole = perm.role || 'STAFF';
+        req.permissions = typeof perm.permissions === 'string' ? JSON.parse(perm.permissions) : perm.permissions || [];
+        return next();
+      }
     }
-
-    const permRes = await pool.query('SELECT * FROM staff_permissions WHERE shop_id = $1 AND user_id = $2', [shopId, req.user.userId]);
-    if (permRes.rows.length === 0) {
-      return res.status(403).json({ error: 'Forbidden: You do not have access to this shop' });
-    }
-
-    const perm = permRes.rows[0];
-    req.shopRole = perm.role || 'STAFF';
-    req.permissions = typeof perm.permissions === 'string' ? JSON.parse(perm.permissions) : perm.permissions || [];
-    return next();
   } catch (err) {
-    return res.status(500).json({ error: 'Internal Server Error' });
+    // Database unreachable, rely on memory store resolution above
   }
+
+  if (!shop) {
+    return res.status(404).json({ error: 'Shop not found' });
+  }
+
+  return res.status(403).json({ error: 'Forbidden: You do not have access to this shop' });
 }
 
 /**

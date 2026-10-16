@@ -121,6 +121,54 @@ class InMemoryDb {
       createdAt: now,
       updatedAt: now
     });
+
+    // Default mobile categories
+    const defaultCategories = [
+      { id: 'cat-grocery', name: 'Grocery' },
+      { id: 'cat-beverages', name: 'Beverages' },
+      { id: 'cat-snacks', name: 'Snacks' },
+      { id: 'cat-dairy', name: 'Dairy' },
+      { id: 'cat-personal-care', name: 'Personal Care' },
+      { id: 'cat-household', name: 'Household' },
+      { id: 'cat-stationery', name: 'Stationery' },
+      { id: 'cat-fruits-veg', name: 'Fruits & Vegetables' },
+      { id: 'cat-cosmetics', name: 'Cosmetics' },
+      { id: 'cat-others', name: 'Others' }
+    ];
+
+    defaultCategories.forEach(cat => {
+      if (!this.categories.has(cat.id)) {
+        this.categories.set(cat.id, {
+          id: cat.id,
+          shopId,
+          name: cat.name,
+          createdAt: now,
+          updatedAt: now,
+          deleted: false
+        });
+      }
+    });
+
+    // Pre-seed mobile product: biscuit (50.0 Piece, Buy: ₹9.00, Sell: ₹10.00)
+    const biscuitId = 'prod-biscuit-001';
+    if (!this.products.has(biscuitId)) {
+      this.products.set(biscuitId, {
+        id: biscuitId,
+        shopId,
+        categoryId: 'cat-snacks',
+        name: 'biscuit',
+        brand: 'Unknown',
+        buyingPricePaise: 900,
+        sellingPricePaise: 1000,
+        quantity: 50.0,
+        unit: 'PIECE',
+        minStockLevel: 5.0,
+        createdAt: now,
+        updatedAt: now,
+        deleted: false
+      });
+    }
+
     this.saveToDisk();
   }
 

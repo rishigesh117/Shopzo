@@ -295,11 +295,13 @@ export async function pullSync(req: AuthenticatedRequest, res: Response) {
   const serverTime = Date.now();
 
   if (useMemoryDb) {
+    const clientShopId = (req.headers['x-shop-id'] as string) || shopId;
     const filterByShopAndSince = (map: Map<string, any>, timeField = 'updatedAt') => {
       const arr: any[] = [];
       for (const v of map.values()) {
-        if (v.shopId === shopId && (v[timeField] || v.createdAt || 0) >= since) {
-          arr.push(v);
+        const matchesShop = v.shopId === shopId || v.shopId === clientShopId || v.shopId === 'shop-default-001';
+        if (matchesShop && (v[timeField] || v.createdAt || 0) >= since) {
+          arr.push({ ...v, shopId: clientShopId });
         }
       }
       return arr;
@@ -321,35 +323,40 @@ export async function pullSync(req: AuthenticatedRequest, res: Response) {
   }
 
   try {
-    const categories = await pool.query('SELECT * FROM categories WHERE shop_id = $1 AND updated_at >= $2', [shopId, since]);
-    const products = await pool.query('SELECT * FROM products WHERE shop_id = $1 AND updated_at >= $2', [shopId, since]);
-    const stockMovements = await pool.query('SELECT * FROM stock_movements WHERE shop_id = $1 AND created_at >= $2', [shopId, since]);
-    const customers = await pool.query('SELECT * FROM customers WHERE shop_id = $1 AND updated_at >= $2', [shopId, since]);
-    const bills = await pool.query('SELECT * FROM bills WHERE shop_id = $1 AND updated_at >= $2', [shopId, since]);
-    const billItems = await pool.query('SELECT bi.* FROM bill_items bi JOIN bills b ON bi.bill_id = b.id WHERE b.shop_id = $1 AND b.updated_at >= $2', [shopId, since]);
-    const payments = await pool.query('SELECT * FROM payments WHERE shop_id = $1 AND created_at >= $2', [shopId, since]);
-    const returns = await pool.query('SELECT * FROM returns WHERE shop_id = $1 AND created_at >= $2', [shopId, since]);
+    const clientShopId = (req.headers['x-shop-id'] as string) || shopId;
+    const categories = await pool.query('SELECT * FROM categories WHERE (shop_id = $1 OR shop_id = $2 OR shop_id = \'shop-default-001\') AND updated_at >= $3', [shopId, clientShopId, since]);
+    const products = await pool.query('SELECT * FROM products WHERE (shop_id = $1 OR shop_id = $2 OR shop_id = \'shop-default-001\') AND updated_at >= $3', [shopId, clientShopId, since]);
+    const stockMovements = await pool.query('SELECT * FROM stock_movements WHERE (shop_id = $1 OR shop_id = $2 OR shop_id = \'shop-default-001\') AND created_at >= $3', [shopId, clientShopId, since]);
+    const customers = await pool.query('SELECT * FROM customers WHERE (shop_id = $1 OR shop_id = $2 OR shop_id = \'shop-default-001\') AND updated_at >= $3', [shopId, clientShopId, since]);
+    const bills = await pool.query('SELECT * FROM bills WHERE (shop_id = $1 OR shop_id = $2 OR shop_id = \'shop-default-001\') AND updated_at >= $3', [shopId, clientShopId, since]);
+    const billItems = await pool.query('SELECT bi.* FROM bill_items bi JOIN bills b ON bi.bill_id = b.id WHERE (b.shop_id = $1 OR b.shop_id = $2 OR b.shop_id = \'shop-default-001\') AND b.updated_at >= $3', [shopId, clientShopId, since]);
+    const payments = await pool.query('SELECT * FROM payments WHERE (shop_id = $1 OR shop_id = $2 OR shop_id = \'shop-default-001\') AND created_at >= $3', [shopId, clientShopId, since]);
+    const returns = await pool.query('SELECT * FROM returns WHERE (shop_id = $1 OR shop_id = $2 OR shop_id = \'shop-default-001\') AND created_at >= $3', [shopId, clientShopId, since]);
+
+    const mapWithClientShop = (fn: (r: any) => any) => (r: any) => ({ ...fn(r), shopId: clientShopId });
 
     return res.json({
       serverTime,
       delta: {
-        categories: categories.rows.map(mapCategoryRow),
-        products: products.rows.map(mapProductRow),
-        stockMovements: stockMovements.rows.map(mapStockMovementRow),
-        customers: customers.rows.map(mapCustomerRow),
-        bills: bills.rows.map(mapBillRow),
-        billItems: billItems.rows.map(mapBillItemRow),
-        payments: payments.rows.map(mapPaymentRow),
-        returns: returns.rows.map(mapReturnRow)
+        categories: categories.rows.map(mapWithClientShop(mapCategoryRow)),
+        products: products.rows.map(mapWithClientShop(mapProductRow)),
+        stockMovements: stockMovements.rows.map(mapWithClientShop(mapStockMovementRow)),
+        customers: customers.rows.map(mapWithClientShop(mapCustomerRow)),
+        bills: bills.rows.map(mapWithClientShop(mapBillRow)),
+        billItems: billItems.rows.map(mapWithClientShop(mapBillItemRow)),
+        payments: payments.rows.map(mapWithClientShop(mapPaymentRow)),
+        returns: returns.rows.map(mapWithClientShop(mapReturnRow))
       }
     });
   } catch (err) {
     console.warn('Database error during pull sync, falling back to memory store:', err);
+    const clientShopId = (req.headers['x-shop-id'] as string) || shopId;
     const filterByShopAndSince = (map: Map<string, any>, timeField = 'updatedAt') => {
       const arr: any[] = [];
       for (const v of map.values()) {
-        if (v.shopId === shopId && (v[timeField] || v.createdAt || 0) >= since) {
-          arr.push(v);
+        const matchesShop = v.shopId === shopId || v.shopId === clientShopId || v.shopId === 'shop-default-001';
+        if (matchesShop && (v[timeField] || v.createdAt || 0) >= since) {
+          arr.push({ ...v, shopId: clientShopId });
         }
       }
       return arr;

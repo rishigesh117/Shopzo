@@ -7,8 +7,8 @@
         "mobileNumber": "8870635581",
         "name": "Rishi",
         "passwordHash": "$2a$10$3lQyBiZSAfU5ZSFyk3TEguWuP4s6zXfex8wPu8YCFPV53LnGOdK5O",
-        "createdAt": 1792131657053,
-        "updatedAt": 1792131657053
+        "createdAt": 1792133612897,
+        "updatedAt": 1792133612897
       }
     ]
   ],
@@ -23,8 +23,8 @@
         "ownerName": "Rishi",
         "ownerMobile": "8870635581",
         "address": "Main Bazaar Road",
-        "createdAt": 1792131657053,
-        "updatedAt": 1792131657053
+        "createdAt": 1792133612897,
+        "updatedAt": 1792133612897
       }
     ]
   ],
@@ -39,13 +39,143 @@
         "permissions": [
           "ALL"
         ],
-        "createdAt": 1792131657053,
-        "updatedAt": 1792131657053
+        "createdAt": 1792133612897,
+        "updatedAt": 1792133612897
       }
     ]
   ],
-  "categories": [],
-  "products": [],
+  "categories": [
+    [
+      "cat-grocery",
+      {
+        "id": "cat-grocery",
+        "shopId": "shop-default-001",
+        "name": "Grocery",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-beverages",
+      {
+        "id": "cat-beverages",
+        "shopId": "shop-default-001",
+        "name": "Beverages",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-snacks",
+      {
+        "id": "cat-snacks",
+        "shopId": "shop-default-001",
+        "name": "Snacks",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-dairy",
+      {
+        "id": "cat-dairy",
+        "shopId": "shop-default-001",
+        "name": "Dairy",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-personal-care",
+      {
+        "id": "cat-personal-care",
+        "shopId": "shop-default-001",
+        "name": "Personal Care",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-household",
+      {
+        "id": "cat-household",
+        "shopId": "shop-default-001",
+        "name": "Household",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-stationery",
+      {
+        "id": "cat-stationery",
+        "shopId": "shop-default-001",
+        "name": "Stationery",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-fruits-veg",
+      {
+        "id": "cat-fruits-veg",
+        "shopId": "shop-default-001",
+        "name": "Fruits & Vegetables",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-cosmetics",
+      {
+        "id": "cat-cosmetics",
+        "shopId": "shop-default-001",
+        "name": "Cosmetics",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-others",
+      {
+        "id": "cat-others",
+        "shopId": "shop-default-001",
+        "name": "Others",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ]
+  ],
+  "products": [
+    [
+      "prod-biscuit-001",
+      {
+        "id": "prod-biscuit-001",
+        "shopId": "shop-default-001",
+        "categoryId": "cat-snacks",
+        "name": "biscuit",
+        "brand": "Unknown",
+        "buyingPricePaise": 900,
+        "sellingPricePaise": 1000,
+        "quantity": 50,
+        "unit": "PIECE",
+        "minStockLevel": 5,
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ]
+  ],
   "stockMovements": [],
   "customers": [],
   "bills": [],

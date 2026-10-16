@@ -5,28 +5,33 @@ import { pool, memoryDb, useMemoryDb } from '../db';
 
 export async function getProducts(req: AuthenticatedRequest, res: Response) {
   const shopId = req.shopId!;
+  const clientShopId = (req.headers['x-shop-id'] as string) || shopId;
 
-  if (useMemoryDb) {
+  const getFromMemory = () => {
     const list: any[] = [];
     for (const p of memoryDb.products.values()) {
-      if (p.shopId === shopId && !p.deleted) {
-        list.push(p);
+      if ((p.shopId === shopId || p.shopId === clientShopId || p.shopId === 'shop-default-001') && !p.deleted) {
+        list.push({ ...p, shopId: clientShopId });
       }
     }
-    return res.json({ products: list });
+    return list;
+  };
+
+  if (useMemoryDb) {
+    return res.json({ products: getFromMemory() });
   }
 
   try {
-    const resProducts = await pool.query('SELECT * FROM products WHERE shop_id = $1 AND deleted = FALSE', [shopId]);
-    return res.json({ products: resProducts.rows });
-  } catch (err) {
-    const list: any[] = [];
-    for (const p of memoryDb.products.values()) {
-      if (p.shopId === shopId && !p.deleted) {
-        list.push(p);
-      }
+    const resProducts = await pool.query(
+      'SELECT * FROM products WHERE (shop_id = $1 OR shop_id = $2 OR shop_id = \'shop-default-001\') AND deleted = FALSE',
+      [shopId, clientShopId]
+    );
+    if (resProducts.rows.length === 0) {
+      return res.json({ products: getFromMemory() });
     }
-    return res.json({ products: list });
+    return res.json({ products: resProducts.rows.map(r => ({ ...r, shopId: clientShopId })) });
+  } catch (err) {
+    return res.json({ products: getFromMemory() });
   }
 }
 

@@ -8,6 +8,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Product } from '../types';
 import { formatMoney, getStockStatus } from '../utils/format';
+import { DEFAULT_CATEGORIES, PRODUCT_UNITS } from '../components/ProductModal';
 
 interface ProductsPageProps {
   onOpenAddProduct: () => void;
@@ -25,6 +26,28 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenAddProduct, on
   const [restockQty, setRestockQty] = useState('10');
   const [isRestocking, setIsRestocking] = useState(false);
 
+  const allFilterCategories = useMemo(() => {
+    const map = new Map<string, { id: string; name: string }>();
+    DEFAULT_CATEGORIES.forEach((c) => map.set(c.id, c));
+    categories.forEach((c) => map.set(c.id, c));
+    return Array.from(map.values());
+  }, [categories]);
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    DEFAULT_CATEGORIES.forEach((c) => map.set(c.id, c.name));
+    categories.forEach((c) => map.set(c.id, c.name));
+    return map;
+  }, [categories]);
+
+  const formatUnitDisplay = (unitStr: string) => {
+    if (!unitStr) return 'Piece';
+    const found = PRODUCT_UNITS.find(
+      (u) => u.value.toLowerCase() === unitStr.toLowerCase() || u.label.toLowerCase() === unitStr.toLowerCase()
+    );
+    return found ? found.label : unitStr;
+  };
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const matchSearch =
@@ -34,12 +57,6 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenAddProduct, on
       return matchSearch && matchCategory && !p.deleted;
     });
   }, [products, search, selectedCategory]);
-
-  const categoryMap = useMemo(() => {
-    const map = new Map<string, string>();
-    categories.forEach((c) => map.set(c.id, c.name));
-    return map;
-  }, [categories]);
 
   const handleRestockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +113,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenAddProduct, on
           onChange={(e) => setSelectedCategory(e.target.value)}
         >
           <option value="ALL">All Categories</option>
-          {categories.map((c) => (
+          {allFilterCategories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -148,7 +165,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenAddProduct, on
                     </span>
                   </td>
                   <td>
-                    <strong>{p.quantity}</strong> {p.unit}
+                    <strong>{p.quantity}</strong> {formatUnitDisplay(p.unit)}
                   </td>
                   <td>
                     <span
