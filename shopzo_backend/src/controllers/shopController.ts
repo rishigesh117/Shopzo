@@ -57,6 +57,31 @@ export async function createShop(req: AuthenticatedRequest, res: Response) {
       createdAt: now,
       updatedAt: now
     });
+
+    // Seed 10 default categories for the new shop
+    const defaultCategories = [
+      { id: `cat-grocery-${shopId}`, name: 'Grocery' },
+      { id: `cat-beverages-${shopId}`, name: 'Beverages' },
+      { id: `cat-snacks-${shopId}`, name: 'Snacks' },
+      { id: `cat-dairy-${shopId}`, name: 'Dairy' },
+      { id: `cat-personal-care-${shopId}`, name: 'Personal Care' },
+      { id: `cat-household-${shopId}`, name: 'Household' },
+      { id: `cat-stationery-${shopId}`, name: 'Stationery' },
+      { id: `cat-fruits-veg-${shopId}`, name: 'Fruits & Vegetables' },
+      { id: `cat-cosmetics-${shopId}`, name: 'Cosmetics' },
+      { id: `cat-others-${shopId}`, name: 'Others' }
+    ];
+    defaultCategories.forEach(cat => {
+      memoryDb.categories.set(cat.id, {
+        id: cat.id,
+        shopId,
+        name: cat.name,
+        createdAt: now,
+        updatedAt: now,
+        deleted: false
+      });
+    });
+
     memoryDb.saveToDisk();
 
     return res.status(201).json({
@@ -85,6 +110,25 @@ export async function createShop(req: AuthenticatedRequest, res: Response) {
       'INSERT INTO staff_permissions (id, shop_id, user_id, role, permissions, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
       [permId, shopId, req.user.userId, 'OWNER', JSON.stringify(['ALL']), now, now]
     );
+
+    const defaultCategories = [
+      { id: `cat-grocery-${shopId}`, name: 'Grocery' },
+      { id: `cat-beverages-${shopId}`, name: 'Beverages' },
+      { id: `cat-snacks-${shopId}`, name: 'Snacks' },
+      { id: `cat-dairy-${shopId}`, name: 'Dairy' },
+      { id: `cat-personal-care-${shopId}`, name: 'Personal Care' },
+      { id: `cat-household-${shopId}`, name: 'Household' },
+      { id: `cat-stationery-${shopId}`, name: 'Stationery' },
+      { id: `cat-fruits-veg-${shopId}`, name: 'Fruits & Vegetables' },
+      { id: `cat-cosmetics-${shopId}`, name: 'Cosmetics' },
+      { id: `cat-others-${shopId}`, name: 'Others' }
+    ];
+    for (const cat of defaultCategories) {
+      await pool.query(
+        'INSERT INTO categories (id, shop_id, name, created_at, updated_at, deleted) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
+        [cat.id, shopId, cat.name, now, now, false]
+      );
+    }
 
     return res.status(201).json({
       shop: {
@@ -131,7 +175,7 @@ export async function getMyShops(req: AuthenticatedRequest, res: Response) {
   const getMemoryShops = () => {
     const userShops: any[] = [];
     for (const shop of memoryDb.shops.values()) {
-      if (shop.ownerId === req.user!.userId || shop.shopCode === 'SZ-5R5SFJ' || shop.ownerMobile === req.user!.mobileNumber) {
+      if (shop.ownerId === req.user!.userId || shop.ownerMobile === req.user!.mobileNumber) {
         userShops.push({ ...shop, ownerName: req.user!.name, ownerMobile: req.user!.mobileNumber, role: 'OWNER' });
       }
     }
@@ -149,22 +193,6 @@ export async function getMyShops(req: AuthenticatedRequest, res: Response) {
           });
         }
       }
-    }
-    if (userShops.length === 0) {
-      const defaultShop = {
-        id: 'shop-sz-5r5sfj',
-        shopCode: 'SZ-5R5SFJ',
-        name: 'Siva electricals',
-        ownerId: req.user!.userId,
-        ownerName: req.user!.name,
-        ownerMobile: req.user!.mobileNumber,
-        address: 'Main Bazaar Road',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        role: 'OWNER'
-      };
-      memoryDb.shops.set(defaultShop.id, defaultShop);
-      userShops.push(defaultShop);
     }
     return res.json({ shops: userShops });
   };

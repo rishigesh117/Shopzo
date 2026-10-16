@@ -85,26 +85,11 @@ export async function login(req: AuthenticatedRequest, res: Response) {
       }
     }
 
-    // Default seed fallback for owner
-    if (!targetUser && cleanMobile === '8870635581') {
-      targetUser = {
-        id: 'user-owner-8870635581',
-        mobileNumber: '8870635581',
-        name: 'Rishi',
-        passwordHash: '$2a$10$3lQyBiZSAfU5ZSFyk3TEguWuP4s6zXfex8wPu8YCFPV53LnGOdK5O' // Sivaelectricals@117
-      };
-      memoryDb.users.set(targetUser.id, targetUser);
-    }
-
     if (!targetUser) {
-      return res.status(401).json({ error: 'Incorrect mobile number or password' });
+      return res.status(401).json({ error: 'Incorrect mobile number or password. Please register your account.' });
     }
 
-    let match = await comparePassword(password, targetUser.passwordHash);
-    if (!match && cleanMobile === '8870635581' && (password === 'Sivaelectricals@117' || password === '123456')) {
-      match = true;
-    }
-
+    const match = await comparePassword(password, targetUser.passwordHash);
     if (!match) {
       return res.status(401).json({ error: 'Incorrect mobile number or password' });
     }
@@ -137,10 +122,9 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     }
 
     if (userShops.length === 0) {
-      const isDefaultOwner = cleanMobile === '8870635581';
-      const shopId = isDefaultOwner ? 'shop-default-001' : uuidv4();
-      const shopCode = isDefaultOwner ? 'SZ-5R5SFJ' : generateShopCode();
-      const shopName = isDefaultOwner ? 'Siva electricals' : `${targetUser.name}'s Store`;
+      const shopId = uuidv4();
+      const shopCode = generateShopCode();
+      const shopName = `${targetUser.name}'s Store`;
       const nowTime = Date.now();
 
       const defaultShop = {
@@ -150,7 +134,7 @@ export async function login(req: AuthenticatedRequest, res: Response) {
         ownerId: targetUser.id,
         ownerName: targetUser.name,
         ownerMobile: targetUser.mobileNumber,
-        address: isDefaultOwner ? 'Main Bazaar Road' : null,
+        address: null,
         createdAt: nowTime,
         updatedAt: nowTime,
         role: 'OWNER'

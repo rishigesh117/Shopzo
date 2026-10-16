@@ -83,74 +83,7 @@ class InMemoryDb {
   }
 
   seedDefaults() {
-    const now = Date.now();
-    const userId = 'user-owner-8870635581';
-    const shopId = 'shop-default-001';
-    // Bcrypt hash for 'Sivaelectricals@117'
-    const defaultHash = '$2a$10$3lQyBiZSAfU5ZSFyk3TEguWuP4s6zXfex8wPu8YCFPV53LnGOdK5O';
-
-    const userObj = {
-      id: userId,
-      mobileNumber: '8870635581',
-      name: 'Rishi',
-      passwordHash: defaultHash,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.users.set(userId, userObj);
-
-    const shopObj = {
-      id: shopId,
-      shopCode: 'SZ-5R5SFJ',
-      name: 'Siva electricals',
-      ownerId: userId,
-      ownerName: 'Rishi',
-      ownerMobile: '8870635581',
-      address: 'Main Bazaar Road',
-      createdAt: now,
-      updatedAt: now
-    };
-    this.shops.set(shopId, shopObj);
-
-    this.staffPermissions.set(`${shopId}:${userId}`, {
-      id: 'perm-owner-001',
-      shopId,
-      userId,
-      role: 'OWNER',
-      permissions: ['ALL'],
-      createdAt: now,
-      updatedAt: now
-    });
-
-    // Default mobile categories
-    const defaultCategories = [
-      { id: 'cat-grocery', name: 'Grocery' },
-      { id: 'cat-beverages', name: 'Beverages' },
-      { id: 'cat-snacks', name: 'Snacks' },
-      { id: 'cat-dairy', name: 'Dairy' },
-      { id: 'cat-personal-care', name: 'Personal Care' },
-      { id: 'cat-household', name: 'Household' },
-      { id: 'cat-stationery', name: 'Stationery' },
-      { id: 'cat-fruits-veg', name: 'Fruits & Vegetables' },
-      { id: 'cat-cosmetics', name: 'Cosmetics' },
-      { id: 'cat-others', name: 'Others' }
-    ];
-
-    defaultCategories.forEach(cat => {
-      if (!this.categories.has(cat.id)) {
-        this.categories.set(cat.id, {
-          id: cat.id,
-          shopId,
-          name: cat.name,
-          createdAt: now,
-          updatedAt: now,
-          deleted: false
-        });
-      }
-    });
-
-    // 0 products baseline - empty inventory ready for new user entry
-
+    // Clean slate: No accounts or shops pre-seeded. All users register fresh.
     this.saveToDisk();
   }
 
