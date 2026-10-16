@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
-import { hashPassword, comparePassword, generateToken } from '../utils/auth';
+import { hashPassword, comparePassword, generateToken, generateShopCode } from '../utils/auth';
 import { pool, memoryDb, useMemoryDb, setUseMemoryDb } from '../db';
 
 /** Map a raw PostgreSQL shop row (snake_case) to camelCase for the Android client */
@@ -113,8 +113,10 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     
     // Find shops
     const userShops: any[] = [];
+    const isRishi = cleanMobile === '8870635581' || targetUser.mobileNumber === '8870635581';
     for (const shop of memoryDb.shops.values()) {
-      if (shop.ownerId === targetUser.id || shop.shopCode === 'SZ-5R5SFJ' || shop.ownerMobile === cleanMobile) {
+      const belongsToUser = shop.ownerId === targetUser.id || (isRishi && (shop.shopCode === 'SZ-5R5SFJ' || shop.id === 'shop-default-001')) || (shop.ownerMobile && shop.ownerMobile === cleanMobile);
+      if (belongsToUser) {
         userShops.push({ ...shop, ownerName: targetUser.name, ownerMobile: targetUser.mobileNumber, role: 'OWNER' });
       }
     }
@@ -135,19 +137,61 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     }
 
     if (userShops.length === 0) {
+      const isDefaultOwner = cleanMobile === '8870635581';
+      const shopId = isDefaultOwner ? 'shop-default-001' : uuidv4();
+      const shopCode = isDefaultOwner ? 'SZ-5R5SFJ' : generateShopCode();
+      const shopName = isDefaultOwner ? 'Siva electricals' : `${targetUser.name}'s Store`;
+      const nowTime = Date.now();
+
       const defaultShop = {
-        id: 'shop-sz-5r5sfj',
-        shopCode: 'SZ-5R5SFJ',
-        name: 'Siva electricals',
+        id: shopId,
+        shopCode,
+        name: shopName,
         ownerId: targetUser.id,
         ownerName: targetUser.name,
         ownerMobile: targetUser.mobileNumber,
-        address: 'Main Bazaar Road',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
+        address: isDefaultOwner ? 'Main Bazaar Road' : null,
+        createdAt: nowTime,
+        updatedAt: nowTime,
         role: 'OWNER'
       };
       memoryDb.shops.set(defaultShop.id, defaultShop);
+      memoryDb.staffPermissions.set(`${defaultShop.id}:${targetUser.id}`, {
+        id: uuidv4(),
+        shopId: defaultShop.id,
+        userId: targetUser.id,
+        role: 'OWNER',
+        permissions: ['ALL'],
+        createdAt: nowTime,
+        updatedAt: nowTime
+      });
+
+      // Seed 10 mobile default categories for the new shop
+      const defaultCategories = [
+        { id: `cat-grocery-${defaultShop.id}`, name: 'Grocery' },
+        { id: `cat-beverages-${defaultShop.id}`, name: 'Beverages' },
+        { id: `cat-snacks-${defaultShop.id}`, name: 'Snacks' },
+        { id: `cat-dairy-${defaultShop.id}`, name: 'Dairy' },
+        { id: `cat-personal-care-${defaultShop.id}`, name: 'Personal Care' },
+        { id: `cat-household-${defaultShop.id}`, name: 'Household' },
+        { id: `cat-stationery-${defaultShop.id}`, name: 'Stationery' },
+        { id: `cat-fruits-veg-${defaultShop.id}`, name: 'Fruits & Vegetables' },
+        { id: `cat-cosmetics-${defaultShop.id}`, name: 'Cosmetics' },
+        { id: `cat-others-${defaultShop.id}`, name: 'Others' }
+      ];
+
+      defaultCategories.forEach(cat => {
+        memoryDb.categories.set(cat.id, {
+          id: cat.id,
+          shopId: defaultShop.id,
+          name: cat.name,
+          createdAt: nowTime,
+          updatedAt: nowTime,
+          deleted: false
+        });
+      });
+
+      memoryDb.saveToDisk();
       userShops.push(defaultShop);
     }
 
