@@ -22,13 +22,39 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [currentShop, setCurrentShop] = useState<Shop | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('shopzo_token'));
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('shopzo_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
-  // Initialize session from token
+  const [shops, setShops] = useState<Shop[]>(() => {
+    try {
+      const saved = localStorage.getItem('shopzo_shops');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [currentShop, setCurrentShop] = useState<Shop | null>(() => {
+    try {
+      const saved = localStorage.getItem('shopzo_shops');
+      const list: Shop[] = saved ? JSON.parse(saved) : [];
+      const savedId = localStorage.getItem('shopzo_shop_id');
+      return list.find((s) => s.id === savedId) || list[0] || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [token, setToken] = useState<string | null>(localStorage.getItem('shopzo_token'));
+  const [isLoading, setIsLoading] = useState<boolean>(!user && !!token);
+
+  // Initialize and validate session from token in background
   useEffect(() => {
     async function initSession() {
       const savedToken = localStorage.getItem('shopzo_token');
@@ -40,8 +66,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const { user } = await api.getMe();
         setUser(user);
+        localStorage.setItem('shopzo_user', JSON.stringify(user));
+
         const { shops } = await api.getMyShops();
         setShops(shops);
+        localStorage.setItem('shopzo_shops', JSON.stringify(shops));
 
         const savedShopId = localStorage.getItem('shopzo_shop_id');
         const matched = shops.find((s) => s.id === savedShopId) || shops[0] || null;
@@ -53,9 +82,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.warn('Session expired or invalid, clearing local session.');
         localStorage.removeItem('shopzo_token');
         localStorage.removeItem('shopzo_shop_id');
+        localStorage.removeItem('shopzo_user');
+        localStorage.removeItem('shopzo_shops');
+        localStorage.removeItem('shopzo_active_tab');
         setToken(null);
         setUser(null);
         setCurrentShop(null);
+        setShops([]);
       } finally {
         setIsLoading(false);
       }
@@ -69,6 +102,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await api.login(mobileNumber, password);
       localStorage.setItem('shopzo_token', res.token);
+      localStorage.setItem('shopzo_user', JSON.stringify(res.user));
+      localStorage.setItem('shopzo_shops', JSON.stringify(res.shops));
       setToken(res.token);
       setUser(res.user);
       setShops(res.shops);
@@ -88,6 +123,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await api.register(name, mobileNumber, password);
       localStorage.setItem('shopzo_token', res.token);
+      localStorage.setItem('shopzo_user', JSON.stringify(res.user));
       setToken(res.token);
       setUser(res.user);
       setShops([]);
@@ -106,7 +142,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await api.createShop(name, address);
       const newShop = res.shop;
-      setShops((prev) => [...prev, newShop]);
+      const updatedShops = [...shops, newShop];
+      setShops(updatedShops);
+      localStorage.setItem('shopzo_shops', JSON.stringify(updatedShops));
       setCurrentShop(newShop);
       localStorage.setItem('shopzo_shop_id', newShop.id);
       return newShop;
@@ -125,6 +163,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { shops } = await api.getMyShops();
       setShops(shops);
+      localStorage.setItem('shopzo_shops', JSON.stringify(shops));
       if (currentShop) {
         const updated = shops.find((s) => s.id === currentShop.id);
         if (updated) setCurrentShop(updated);
@@ -135,6 +174,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     localStorage.removeItem('shopzo_token');
     localStorage.removeItem('shopzo_shop_id');
+    localStorage.removeItem('shopzo_user');
+    localStorage.removeItem('shopzo_shops');
+    localStorage.removeItem('shopzo_active_tab');
+    window.location.hash = '';
     setToken(null);
     setUser(null);
     setCurrentShop(null);

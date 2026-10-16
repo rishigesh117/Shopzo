@@ -33,11 +33,23 @@ import {
 } from 'lucide-react';
 import { Bill, Product, Customer } from './types';
 
+const VALID_TABS = ['dashboard', 'billing', 'products', 'customers', 'bills', 'staff', 'reports', 'settings'];
+
+const getInitialTab = (): string => {
+  if (typeof window !== 'undefined') {
+    const hash = window.location.hash.replace('#', '').trim();
+    if (hash && VALID_TABS.includes(hash)) return hash;
+    const saved = localStorage.getItem('shopzo_active_tab');
+    if (saved && VALID_TABS.includes(saved)) return saved;
+  }
+  return 'dashboard';
+};
+
 const MainLayout: React.FC = () => {
-  const { isAuthenticated, currentShop, shops, logout, user } = useAuth();
+  const { isAuthenticated, currentShop, shops, logout, user, isLoading } = useAuth();
   const { categories, createProduct, updateProduct, createCustomer, recordCustomerPayment } = useApp();
 
-  const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  const [currentTab, setCurrentTab] = useState<string>(getInitialTab);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState<boolean>(false);
   const [isCreateShopOpen, setIsCreateShopOpen] = useState<boolean>(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState<boolean>(false);
@@ -45,6 +57,39 @@ const MainLayout: React.FC = () => {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState<boolean>(false);
   const [payingCustomer, setPayingCustomer] = useState<Customer | null>(null);
   const [viewingBill, setViewingBill] = useState<Bill | null>(null);
+
+  // Sync tab with URL hash and localStorage
+  const handleSelectTab = (tab: string) => {
+    setCurrentTab(tab);
+    localStorage.setItem('shopzo_active_tab', tab);
+    if (window.location.hash !== `#${tab}`) {
+      window.location.hash = tab;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Listen to browser navigation (back/forward or direct hash entry)
+  React.useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash && VALID_TABS.includes(hash)) {
+        setCurrentTab(hash);
+        localStorage.setItem('shopzo_active_tab', hash);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  // Show clean loading state while validating saved session
+  if (isLoading && !user) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)', color: 'var(--text-primary)' }}>
+        <div style={{ width: '44px', height: '44px', border: '3px solid rgba(99, 102, 241, 0.2)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ marginTop: '16px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Loading Shopzo...</p>
+      </div>
+    );
+  }
 
   // If user is not authenticated, render login/signup flow
   if (!isAuthenticated) {
@@ -95,10 +140,7 @@ const MainLayout: React.FC = () => {
       {/* Desktop Sidebar */}
       <Sidebar 
         currentTab={currentTab} 
-        onSelectTab={(tab) => {
-          setCurrentTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onSelectTab={handleSelectTab}
         onOpenCreateShop={() => setIsCreateShopOpen(true)}
       />
 
@@ -109,10 +151,7 @@ const MainLayout: React.FC = () => {
         <main style={{ paddingBottom: '80px' }}>
           {currentTab === 'dashboard' && (
             <DashboardPage
-              onNavigate={(tab) => {
-                setCurrentTab(tab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onNavigate={handleSelectTab}
               onOpenAddProduct={() => {
                 setEditingProduct(null);
                 setIsAddProductOpen(true);
@@ -159,10 +198,7 @@ const MainLayout: React.FC = () => {
       {/* Mobile Bottom Navigation Bar */}
       <MobileNav 
         currentTab={currentTab} 
-        onSelectTab={(tab) => {
-          setCurrentTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onSelectTab={handleSelectTab}
         onOpenMore={() => setIsMobileMoreOpen(true)}
       />
 
@@ -190,7 +226,7 @@ const MainLayout: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '20px' }}>
               <button 
-                onClick={() => { setCurrentTab('bills'); setIsMobileMoreOpen(false); }}
+                onClick={() => { handleSelectTab('bills'); setIsMobileMoreOpen(false); }}
                 className="btn btn-outline"
                 style={{ height: '54px', justifyContent: 'flex-start', gap: '10px' }}
               >
@@ -198,7 +234,7 @@ const MainLayout: React.FC = () => {
               </button>
 
               <button 
-                onClick={() => { setCurrentTab('staff'); setIsMobileMoreOpen(false); }}
+                onClick={() => { handleSelectTab('staff'); setIsMobileMoreOpen(false); }}
                 className="btn btn-outline"
                 style={{ height: '54px', justifyContent: 'flex-start', gap: '10px' }}
               >
@@ -206,7 +242,7 @@ const MainLayout: React.FC = () => {
               </button>
 
               <button 
-                onClick={() => { setCurrentTab('reports'); setIsMobileMoreOpen(false); }}
+                onClick={() => { handleSelectTab('reports'); setIsMobileMoreOpen(false); }}
                 className="btn btn-outline"
                 style={{ height: '54px', justifyContent: 'flex-start', gap: '10px' }}
               >
@@ -214,7 +250,7 @@ const MainLayout: React.FC = () => {
               </button>
 
               <button 
-                onClick={() => { setCurrentTab('settings'); setIsMobileMoreOpen(false); }}
+                onClick={() => { handleSelectTab('settings'); setIsMobileMoreOpen(false); }}
                 className="btn btn-outline"
                 style={{ height: '54px', justifyContent: 'flex-start', gap: '10px' }}
               >
