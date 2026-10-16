@@ -95,10 +95,22 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ bill, onClose }) => 
               <span>Grand Total:</span>
               <span style={{ color: '#2563eb' }}>{formatMoney(bill.grandTotalPaise)}</span>
             </div>
+            {bill.receivedAmountPaise !== undefined && bill.receivedAmountPaise > bill.paidAmountPaise && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', padding: '4px 0', color: '#475569' }}>
+                <span>Amount Received:</span>
+                <span style={{ fontWeight: 700 }}>{formatMoney(bill.receivedAmountPaise)}</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', padding: '4px 0' }}>
               <span>Amount Paid:</span>
               <span style={{ color: '#059669', fontWeight: 700 }}>{formatMoney(bill.paidAmountPaise)}</span>
             </div>
+            {bill.changeReturnedPaise !== undefined && bill.changeReturnedPaise > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem', padding: '5px 0', color: '#0f766e', fontWeight: 800, borderTop: '1px dashed #cbd5e1' }}>
+                <span>Change Returned:</span>
+                <span>{formatMoney(bill.changeReturnedPaise)}</span>
+              </div>
+            )}
             {bill.pendingAmountPaise > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', padding: '4px 0' }}>
                 <span style={{ color: '#dc2626', fontWeight: 600 }}>Balance Due (Khata):</span>

@@ -118,16 +118,28 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
     return cart.reduce((acc, item) => acc + item.subtotalPaise, 0);
   }, [cart]);
 
-  const paidAmountPaise = useMemo(() => {
+  const receivedAmountPaise = useMemo(() => {
     if (paymentMethod === 'CREDIT') return 0;
     if (customPaidAmount !== '') {
       const val = parseFloat(customPaidAmount);
-      if (!isNaN(val)) return Math.min(Math.round(val * 100), grandTotalPaise);
+      if (!isNaN(val)) return Math.max(0, Math.round(val * 100));
     }
     return grandTotalPaise;
   }, [customPaidAmount, grandTotalPaise, paymentMethod]);
 
-  const pendingDuePaise = grandTotalPaise - paidAmountPaise;
+  const paidAmountPaise = useMemo(() => {
+    if (paymentMethod === 'CREDIT') return 0;
+    return Math.min(receivedAmountPaise, grandTotalPaise);
+  }, [receivedAmountPaise, grandTotalPaise, paymentMethod]);
+
+  const changeReturnPaise = useMemo(() => {
+    if (paymentMethod === 'CREDIT') return 0;
+    return Math.max(0, receivedAmountPaise - grandTotalPaise);
+  }, [receivedAmountPaise, grandTotalPaise, paymentMethod]);
+
+  const pendingDuePaise = useMemo(() => {
+    return Math.max(0, grandTotalPaise - paidAmountPaise);
+  }, [grandTotalPaise, paidAmountPaise]);
 
   const handleCheckout = async () => {
     if (cart.length === 0) {
@@ -156,7 +168,12 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
       const bill = await createBill(
         { id: custId, name: custName, mobileNumber: custMobile },
         cart.map((i) => ({ product: i.product, quantity: i.quantity })),
-        { method: paymentMethod, paidAmountPaise }
+        {
+          method: paymentMethod,
+          paidAmountPaise,
+          receivedAmountPaise,
+          changeReturnedPaise: changeReturnPaise,
+        }
       );
       clearCart();
       onBillGenerated(bill);
@@ -472,8 +489,8 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
                   type="number"
                   step="0.01"
                   className="form-input"
-                  style={{ padding: '6px 10px', fontSize: '0.82rem', height: '34px' }}
-                  placeholder={`Paid: ₹${(grandTotalPaise / 100).toFixed(2)}`}
+                  style={{ padding: '6px 10px', fontSize: '0.88rem', height: '38px', fontWeight: 700 }}
+                  placeholder={`Received: ₹${(grandTotalPaise / 100).toFixed(2)}`}
                   value={customPaidAmount}
                   onChange={(e) => setCustomPaidAmount(e.target.value)}
                 />
@@ -481,10 +498,39 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
                   type="button"
                   onClick={() => setCustomPaidAmount('')}
                   className="btn btn-outline btn-sm"
-                  style={{ height: '34px', fontSize: '0.75rem' }}
+                  style={{ height: '38px', fontSize: '0.78rem' }}
                 >
                   Full
                 </button>
+              </div>
+            )}
+
+            {/* Change to Return / Give Back (Matching Mobile App) */}
+            {changeReturnPaise > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 14px',
+                  background: 'rgba(13, 148, 136, 0.12)',
+                  border: '1.5px solid #0d9488',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: '10px',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Change to Give Customer
+                  </div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f766e' }}>
+                    {formatMoney(changeReturnPaise)}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: '0.78rem', color: '#134e4a' }}>
+                  <div>Received: <strong>{formatMoney(receivedAmountPaise)}</strong></div>
+                  <div>Bill: <strong>{formatMoney(grandTotalPaise)}</strong></div>
+                </div>
               </div>
             )}
 

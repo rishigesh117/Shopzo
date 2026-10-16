@@ -20,8 +20,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({ onSave, onClose })
       return;
     }
     const cleanMobile = mobileNumber.replace(/\D/g, '');
-    if (cleanMobile.length < 10) {
-      setError('Please enter a valid 10-digit mobile number');
+    if (cleanMobile.length > 0 && cleanMobile.length !== 10) {
+      setError('Please enter a valid 10-digit mobile number or leave blank');
       return;
     }
 
@@ -70,15 +70,14 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({ onSave, onClose })
           </div>
 
           <div className="form-group">
-            <label className="form-label">Mobile Number *</label>
+            <label className="form-label">Mobile Number (Optional)</label>
             <input
               type="tel"
               maxLength={10}
               className="form-input"
-              placeholder="e.g. 9876543210"
+              placeholder="e.g. 9876543210 (Optional)"
               value={mobileNumber}
               onChange={(e) => setMobileNumber(e.target.value)}
-              required
             />
           </div>
 

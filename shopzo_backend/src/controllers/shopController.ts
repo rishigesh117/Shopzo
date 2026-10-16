@@ -57,6 +57,7 @@ export async function createShop(req: AuthenticatedRequest, res: Response) {
       createdAt: now,
       updatedAt: now
     });
+    memoryDb.saveToDisk();
 
     return res.status(201).json({
       shop: {
@@ -111,6 +112,7 @@ export async function createShop(req: AuthenticatedRequest, res: Response) {
       updatedAt: now
     };
     memoryDb.shops.set(shopId, shop);
+    memoryDb.saveToDisk();
     return res.status(201).json({
       shop: {
         ...shop,

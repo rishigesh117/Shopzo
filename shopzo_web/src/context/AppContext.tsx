@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { Product, Category, Customer, Bill, BillItem, Payment, Staff, SyncOperation } from '../types';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
-import { uuid } from '../utils/format';
+import { uuid, generateBillNumber } from '../utils/format';
 
 interface Toast {
   id: string;
@@ -32,7 +32,7 @@ interface AppContextType {
   createBill: (
     customerInfo: { id?: string; name: string; mobileNumber: string },
     items: { product: Product; quantity: number }[],
-    paymentInfo: { method: 'CASH' | 'UPI' | 'CARD' | 'CREDIT'; paidAmountPaise: number }
+    paymentInfo: { method: 'CASH' | 'UPI' | 'CARD' | 'CREDIT'; paidAmountPaise: number; receivedAmountPaise?: number; changeReturnedPaise?: number }
   ) => Promise<Bill>;
   recordCustomerPayment: (customerId: string, amountPaise: number, paymentMethod: 'CASH' | 'UPI' | 'CARD') => Promise<void>;
   addStaff: (name: string, mobileNumber: string, password: string, permissions: string[]) => Promise<void>;
@@ -234,14 +234,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const createBill = async (
     customerInfo: { id?: string; name: string; mobileNumber: string },
     items: { product: Product; quantity: number }[],
-    paymentInfo: { method: 'CASH' | 'UPI' | 'CARD' | 'CREDIT'; paidAmountPaise: number }
+    paymentInfo: { method: 'CASH' | 'UPI' | 'CARD' | 'CREDIT'; paidAmountPaise: number; receivedAmountPaise?: number; changeReturnedPaise?: number }
   ): Promise<Bill> => {
     if (!currentShop) throw new Error('No active shop selected');
     if (items.length === 0) throw new Error('Cannot create empty bill');
 
     const billId = uuid();
     const now = Date.now();
-    const billNumber = `SZ-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // Unique Bill Number (#1001, #1002, ...) identical to mobile app
+    const billNumber = generateBillNumber(bills);
 
     let subtotalPaise = 0;
     const billItems: BillItem[] = items.map((item) => {
@@ -263,6 +264,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const grandTotalPaise = subtotalPaise;
     const paidAmount = Math.min(paymentInfo.paidAmountPaise, grandTotalPaise);
+    const receivedAmount = paymentInfo.receivedAmountPaise !== undefined ? paymentInfo.receivedAmountPaise : paidAmount;
+    const changeReturned = paymentInfo.changeReturnedPaise !== undefined ? paymentInfo.changeReturnedPaise : Math.max(0, receivedAmount - grandTotalPaise);
     const pendingAmount = grandTotalPaise - paidAmount;
 
     let paymentStatus: 'PAID' | 'PARTIALLY_PAID' | 'PENDING' = 'PAID';
@@ -282,7 +285,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       subtotalPaise,
       grandTotalPaise,
       paidAmountPaise: paidAmount,
+      receivedAmountPaise: receivedAmount,
+      changeReturnedPaise: changeReturned,
       pendingAmountPaise: pendingAmount,
+      paymentMethod: paymentInfo.method,
       paymentStatus,
       items: billItems,
       createdAt: now,
@@ -306,7 +312,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     billItems.forEach((bi) => {
       operations.push({
         id: uuid(),
-        entityType: 'BILL', // bill item processed together or mapped
+        entityType: 'BILL_ITEM',
         entityId: bi.id,
         operationType: 'CREATE',
         payload: JSON.stringify(bi),

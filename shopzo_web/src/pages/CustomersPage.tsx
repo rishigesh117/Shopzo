@@ -17,7 +17,7 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ onOpenAddCustomer,
     return customers.filter(
       (c) =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.mobileNumber.includes(search)
+        (c.mobileNumber && c.mobileNumber.includes(search))
     );
   }, [customers, search]);
 
@@ -115,10 +115,14 @@ export const CustomersPage: React.FC<CustomersPageProps> = ({ onOpenAddCustomer,
                     </div>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem' }}>
-                      <Phone size={14} color="var(--text-subtle)" />
-                      <span>{c.mobileNumber}</span>
-                    </div>
+                    {c.mobileNumber ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem' }}>
+                        <Phone size={14} color="var(--text-subtle)" />
+                        <span>{c.mobileNumber}</span>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>—</span>
+                    )}
                   </td>
                   <td>
                     <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>

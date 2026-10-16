@@ -39,6 +39,7 @@ export async function register(req: AuthenticatedRequest, res: Response) {
     }
     const user = { id: userId, mobileNumber: cleanMobile, passwordHash, name, createdAt: now, updatedAt: now };
     memoryDb.users.set(userId, user);
+    memoryDb.saveToDisk();
     const token = generateToken({ userId, mobileNumber: cleanMobile, name });
     return res.status(201).json({ token, user: { id: userId, mobileNumber: cleanMobile, name } });
   };
@@ -235,6 +236,7 @@ export async function resetPassword(req: AuthenticatedRequest, res: Response) {
         updatedAt: now
       });
     }
+    memoryDb.saveToDisk();
     return res.json({ message: 'Password reset successfully' });
   };
 

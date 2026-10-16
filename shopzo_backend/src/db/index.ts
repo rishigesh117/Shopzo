@@ -15,7 +15,12 @@ export const pool = new Pool({
   connectionTimeoutMillis: 4000,
 });
 
-// In-Memory Database Store for robust offline execution and fallback
+import fs from 'fs';
+import path from 'path';
+
+const DB_FILE = path.resolve(__dirname, '../../shopzo_data.json');
+
+// Persistent In-Memory Database Store for robust offline & multi-device execution
 class InMemoryDb {
   users: Map<string, any> = new Map();
   shops: Map<string, any> = new Map();
@@ -30,7 +35,51 @@ class InMemoryDb {
   returns: Map<string, any> = new Map();
 
   constructor() {
+    this.loadFromDisk();
     this.seedDefaults();
+  }
+
+  saveToDisk() {
+    try {
+      const data = {
+        users: Array.from(this.users.entries()),
+        shops: Array.from(this.shops.entries()),
+        staffPermissions: Array.from(this.staffPermissions.entries()),
+        categories: Array.from(this.categories.entries()),
+        products: Array.from(this.products.entries()),
+        stockMovements: Array.from(this.stockMovements.entries()),
+        customers: Array.from(this.customers.entries()),
+        bills: Array.from(this.bills.entries()),
+        billItems: Array.from(this.billItems.entries()),
+        payments: Array.from(this.payments.entries()),
+        returns: Array.from(this.returns.entries()),
+      };
+      fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    } catch (e) {
+      // In serverless read-only disk environments like Vercel, ignore write errors
+    }
+  }
+
+  loadFromDisk() {
+    try {
+      if (fs.existsSync(DB_FILE)) {
+        const raw = fs.readFileSync(DB_FILE, 'utf-8');
+        const data = JSON.parse(raw);
+        if (data.users) this.users = new Map(data.users);
+        if (data.shops) this.shops = new Map(data.shops);
+        if (data.staffPermissions) this.staffPermissions = new Map(data.staffPermissions);
+        if (data.categories) this.categories = new Map(data.categories);
+        if (data.products) this.products = new Map(data.products);
+        if (data.stockMovements) this.stockMovements = new Map(data.stockMovements);
+        if (data.customers) this.customers = new Map(data.customers);
+        if (data.bills) this.bills = new Map(data.bills);
+        if (data.billItems) this.billItems = new Map(data.billItems);
+        if (data.payments) this.payments = new Map(data.payments);
+        if (data.returns) this.returns = new Map(data.returns);
+      }
+    } catch (e) {
+      console.warn('Could not load persistent shopzo_data.json:', e);
+    }
   }
 
   seedDefaults() {
@@ -89,6 +138,7 @@ class InMemoryDb {
     this.payments.clear();
     this.returns.clear();
     this.seedDefaults();
+    this.saveToDisk();
   }
 }
 

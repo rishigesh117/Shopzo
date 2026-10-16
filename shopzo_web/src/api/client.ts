@@ -187,7 +187,29 @@ export class ApiClient {
     payments: Payment[];
     returns: any[];
   }> {
-    return this.request(`/api/sync/pull?since=${since}`);
+    const res = await this.request<any>(`/api/sync/pull?since=${since}`);
+    if (res && res.delta) {
+      return {
+        serverTime: res.serverTime || Date.now(),
+        categories: res.delta.categories || [],
+        products: res.delta.products || [],
+        customers: res.delta.customers || [],
+        bills: res.delta.bills || [],
+        billItems: res.delta.billItems || [],
+        payments: res.delta.payments || [],
+        returns: res.delta.returns || [],
+      };
+    }
+    return {
+      serverTime: res?.serverTime || Date.now(),
+      categories: res?.categories || [],
+      products: res?.products || [],
+      customers: res?.customers || [],
+      bills: res?.bills || [],
+      billItems: res?.billItems || [],
+      payments: res?.payments || [],
+      returns: res?.returns || [],
+    };
   }
 
   async pushSync(_shopId: string, operations: SyncOperation[]): Promise<{ syncedIds: string[]; serverTime: number }> {

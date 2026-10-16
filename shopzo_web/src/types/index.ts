@@ -88,6 +88,8 @@ export interface Bill {
   totalAmount?: number;
   paidAmountPaise: number;
   paidAmount?: number;
+  receivedAmountPaise?: number;
+  changeReturnedPaise?: number;
   pendingAmountPaise: number;
   paymentMethod?: string;
   paymentStatus: 'PAID' | 'PARTIALLY_PAID' | 'PENDING';
@@ -117,7 +119,7 @@ export interface Staff {
 
 export interface SyncOperation {
   id: string;
-  entityType: 'PRODUCT' | 'CATEGORY' | 'CUSTOMER' | 'BILL' | 'PAYMENT' | 'RETURN';
+  entityType: 'PRODUCT' | 'CATEGORY' | 'CUSTOMER' | 'BILL' | 'BILL_ITEM' | 'PAYMENT' | 'RETURN' | 'STOCK_MOVEMENT';
   entityId: string;
   operationType: 'CREATE' | 'UPDATE' | 'DELETE';
   payload: string;

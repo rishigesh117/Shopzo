@@ -39,11 +39,20 @@ export function uuid(): string {
   });
 }
 
-export function generateBillNumber(): string {
-  const now = new Date();
-  const datePart = now.toISOString().slice(2, 10).replace(/-/g, '');
-  const randomPart = Math.floor(1000 + Math.random() * 9000);
-  return `SZ-${datePart}-${randomPart}`;
+export function generateBillNumber(existingBills?: { billNumber?: string }[]): string {
+  let maxNum = 1000;
+  if (existingBills && Array.isArray(existingBills)) {
+    existingBills.forEach((b) => {
+      if (b.billNumber) {
+        const clean = b.billNumber.replace(/^#/, '');
+        const num = parseInt(clean, 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    });
+  }
+  return `#${maxNum + 1}`;
 }
 
 export function getStockStatus(quantity: number, minStockLevel: number): 'OUT_OF_STOCK' | 'LOW_STOCK' | 'IN_STOCK' {

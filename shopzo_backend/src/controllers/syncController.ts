@@ -31,7 +31,11 @@ export async function pushSync(req: AuthenticatedRequest, res: Response) {
       if (useMemoryDb) {
         processMemoryOperation(op, shopId);
       } else {
-        await processDbOperation(op, shopId);
+        try {
+          await processDbOperation(op, shopId);
+        } catch (dbErr) {
+          processMemoryOperation(op, shopId);
+        }
       }
       syncedIds.push(op.id);
     } catch (err) {
@@ -40,11 +44,26 @@ export async function pushSync(req: AuthenticatedRequest, res: Response) {
     }
   }
 
+  // Persist memory store to disk on push operations
+  memoryDb.saveToDisk();
+
   return res.json({ syncedIds, serverTime: Date.now() });
 }
 
+function parsePayload(payload: any): any {
+  if (!payload) return {};
+  if (typeof payload === 'string') {
+    try {
+      return JSON.parse(payload);
+    } catch (_) {
+      return {};
+    }
+  }
+  return payload;
+}
+
 function processMemoryOperation(op: SyncOperation, shopId: string) {
-  const p = op.payload || {};
+  const p = parsePayload(op.payload);
   const entityId = op.entityId;
 
   switch (op.entityType) {
@@ -82,7 +101,7 @@ function processMemoryOperation(op: SyncOperation, shopId: string) {
 }
 
 async function processDbOperation(op: SyncOperation, shopId: string) {
-  const p = op.payload || {};
+  const p = parsePayload(op.payload);
   const entityId = op.entityId;
   const now = Date.now();
 
