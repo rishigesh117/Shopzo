@@ -156,26 +156,7 @@
       }
     ]
   ],
-  "products": [
-    [
-      "prod-biscuit-001",
-      {
-        "id": "prod-biscuit-001",
-        "shopId": "shop-default-001",
-        "categoryId": "cat-snacks",
-        "name": "biscuit",
-        "brand": "Unknown",
-        "buyingPricePaise": 900,
-        "sellingPricePaise": 1000,
-        "quantity": 50,
-        "unit": "PIECE",
-        "minStockLevel": 5,
-        "createdAt": 1792131657053,
-        "updatedAt": 1792131657053,
-        "deleted": false
-      }
-    ]
-  ],
+  "products": [],
   "stockMovements": [],
   "customers": [],
   "bills": [],

@@ -149,25 +149,7 @@ class InMemoryDb {
       }
     });
 
-    // Pre-seed mobile product: biscuit (50.0 Piece, Buy: ₹9.00, Sell: ₹10.00)
-    const biscuitId = 'prod-biscuit-001';
-    if (!this.products.has(biscuitId)) {
-      this.products.set(biscuitId, {
-        id: biscuitId,
-        shopId,
-        categoryId: 'cat-snacks',
-        name: 'biscuit',
-        brand: 'Unknown',
-        buyingPricePaise: 900,
-        sellingPricePaise: 1000,
-        quantity: 50.0,
-        unit: 'PIECE',
-        minStockLevel: 5.0,
-        createdAt: now,
-        updatedAt: now,
-        deleted: false
-      });
-    }
+    // 0 products baseline - empty inventory ready for new user entry
 
     this.saveToDisk();
   }
