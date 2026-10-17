@@ -229,7 +229,7 @@ export const AuthPage: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   className="form-input"
                   style={{ paddingLeft: '38px', paddingRight: '42px' }}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
