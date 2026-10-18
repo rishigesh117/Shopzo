@@ -48,6 +48,7 @@ class ValidationUtilsTest {
     fun validatePrice_checks() {
         assertNull(ValidationUtils.validatePrice("100.50"))
         assertNull(ValidationUtils.validatePrice("0"))
+        assertNull(ValidationUtils.validatePrice("", required = false))
         assertNotNull(ValidationUtils.validatePrice("-5"))
         assertNotNull(ValidationUtils.validatePrice(""))
         assertNotNull(ValidationUtils.validatePrice("invalid"))
@@ -57,6 +58,7 @@ class ValidationUtilsTest {
     fun validateQuantity_checks() {
         assertNull(ValidationUtils.validateQuantity("10"))
         assertNull(ValidationUtils.validateQuantity("0.5"))
+        assertNull(ValidationUtils.validateQuantity("", required = false))
         assertNotNull(ValidationUtils.validateQuantity("-1"))
         assertNotNull(ValidationUtils.validateQuantity(""))
     }

@@ -242,7 +242,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, categories,
             </div>
 
             <div className="form-group">
-              <label className="form-label">Buying / Cost Price (₹)</label>
+              <label className="form-label">Buying / Cost Price (₹) (Optional)</label>
               <input
                 type="number"
                 step="0.01"
@@ -257,7 +257,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, categories,
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr', gap: '16px' }}>
             <div className="form-group">
-              <label className="form-label">Stock Quantity</label>
+              <label className="form-label">Stock Quantity (Optional)</label>
               <input
                 type="number"
                 step="0.01"

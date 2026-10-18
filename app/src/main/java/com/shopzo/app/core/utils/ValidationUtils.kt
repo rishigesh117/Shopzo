@@ -36,15 +36,15 @@ object ValidationUtils {
         return null
     }
 
-    fun validatePrice(price: String, fieldName: String = "Price"): String? {
-        if (price.trim().isEmpty()) return "$fieldName is required."
+    fun validatePrice(price: String, fieldName: String = "Price", required: Boolean = true): String? {
+        if (price.trim().isEmpty()) return if (required) "$fieldName is required." else null
         val amount = price.trim().toDoubleOrNull()
         if (amount == null || amount < 0) return "Enter a valid $fieldName."
         return null
     }
 
-    fun validateQuantity(quantity: String): String? {
-        if (quantity.trim().isEmpty()) return "Quantity is required."
+    fun validateQuantity(quantity: String, required: Boolean = true): String? {
+        if (quantity.trim().isEmpty()) return if (required) "Quantity is required." else null
         val qty = quantity.trim().toDoubleOrNull()
         if (qty == null || qty < 0) return "Enter a valid quantity."
         return null
@@ -57,8 +57,8 @@ object ValidationUtils {
         return null
     }
 
-    fun validateMinStockLevel(level: String): String? {
-        if (level.trim().isEmpty()) return "Minimum stock level is required."
+    fun validateMinStockLevel(level: String, required: Boolean = true): String? {
+        if (level.trim().isEmpty()) return if (required) "Minimum stock level is required." else null
         val lvl = level.trim().toDoubleOrNull()
         if (lvl == null || lvl < 0) return "Enter a valid minimum stock level."
         return null

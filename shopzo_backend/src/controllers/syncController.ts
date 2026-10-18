@@ -29,13 +29,14 @@ export async function pushSync(req: AuthenticatedRequest, res: Response) {
     op.shopId = shopId;
 
     try {
-      if (useMemoryDb) {
-        processMemoryOperation(op, shopId);
-      } else {
+      // Always update in-memory store so changes are immediately available across endpoints
+      processMemoryOperation(op, shopId);
+
+      if (!useMemoryDb) {
         try {
           await processDbOperation(op, shopId);
         } catch (dbErr) {
-          processMemoryOperation(op, shopId);
+          console.warn(`DB write failed for ${op.id} (${op.entityType}), retained in memory:`, dbErr);
         }
       }
       syncedIds.push(op.id);
@@ -335,17 +336,39 @@ export async function pullSync(req: AuthenticatedRequest, res: Response) {
 
     const mapWithClientShop = (fn: (r: any) => any) => (r: any) => ({ ...fn(r), shopId: clientShopId });
 
+    // Helper to merge memory items not present in DB
+    const mergeWithMemory = (dbRows: any[], memMap: Map<string, any>, timeField = 'updatedAt') => {
+      const dbIds = new Set(dbRows.map((r: any) => r.id));
+      const extra: any[] = [];
+      for (const v of memMap.values()) {
+        const matchesShop = v.shopId === shopId || v.shopId === clientShopId || v.shopId === 'shop-default-001';
+        if (matchesShop && !dbIds.has(v.id) && (v[timeField] || v.createdAt || 0) >= since) {
+          extra.push({ ...v, shopId: clientShopId });
+        }
+      }
+      return [...dbRows, ...extra];
+    };
+
+    const catList = mergeWithMemory(categories.rows.map(mapWithClientShop(mapCategoryRow)), memoryDb.categories);
+    const prodList = mergeWithMemory(products.rows.map(mapWithClientShop(mapProductRow)), memoryDb.products);
+    const stockList = mergeWithMemory(stockMovements.rows.map(mapWithClientShop(mapStockMovementRow)), memoryDb.stockMovements, 'createdAt');
+    const custList = mergeWithMemory(customers.rows.map(mapWithClientShop(mapCustomerRow)), memoryDb.customers);
+    const billList = mergeWithMemory(bills.rows.map(mapWithClientShop(mapBillRow)), memoryDb.bills);
+    const billItemList = mergeWithMemory(billItems.rows.map(mapWithClientShop(mapBillItemRow)), memoryDb.billItems, 'createdAt');
+    const paymentList = mergeWithMemory(payments.rows.map(mapWithClientShop(mapPaymentRow)), memoryDb.payments, 'createdAt');
+    const returnList = mergeWithMemory(returns.rows.map(mapWithClientShop(mapReturnRow)), memoryDb.returns, 'createdAt');
+
     return res.json({
       serverTime,
       delta: {
-        categories: categories.rows.map(mapWithClientShop(mapCategoryRow)),
-        products: products.rows.map(mapWithClientShop(mapProductRow)),
-        stockMovements: stockMovements.rows.map(mapWithClientShop(mapStockMovementRow)),
-        customers: customers.rows.map(mapWithClientShop(mapCustomerRow)),
-        bills: bills.rows.map(mapWithClientShop(mapBillRow)),
-        billItems: billItems.rows.map(mapWithClientShop(mapBillItemRow)),
-        payments: payments.rows.map(mapWithClientShop(mapPaymentRow)),
-        returns: returns.rows.map(mapWithClientShop(mapReturnRow))
+        categories: catList,
+        products: prodList,
+        stockMovements: stockList,
+        customers: custList,
+        bills: billList,
+        billItems: billItemList,
+        payments: paymentList,
+        returns: returnList
       }
     });
   } catch (err) {

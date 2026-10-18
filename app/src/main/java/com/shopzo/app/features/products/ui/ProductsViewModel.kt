@@ -119,18 +119,17 @@ class ProductsViewModel(
         val nameError = ValidationUtils.validateProductName(productName)
         if (nameError != null) { errorMessage = nameError; return }
         if (selectedCategoryId.isEmpty()) { errorMessage = "Please select a category."; return }
-        val buyError = ValidationUtils.validatePrice(buyingPrice, "Buying price")
+        val buyError = ValidationUtils.validatePrice(buyingPrice, "Buying price", required = false)
         if (buyError != null) { errorMessage = buyError; return }
         val sellError = ValidationUtils.validatePrice(sellingPrice, "Selling price")
         if (sellError != null) { errorMessage = sellError; return }
-        val qtyError = ValidationUtils.validateQuantity(quantity)
+        val qtyError = ValidationUtils.validateQuantity(quantity, required = false)
         if (qtyError != null) { errorMessage = qtyError; return }
-        val minError = ValidationUtils.validateMinStockLevel(minStockLevel)
+        val minError = ValidationUtils.validateMinStockLevel(minStockLevel, required = false)
         if (minError != null) { errorMessage = minError; return }
 
-        val buyPaise = MoneyUtils.rupeesToPaise(buyingPrice)
-        val sellPaise = MoneyUtils.rupeesToPaise(sellingPrice)
-        if (buyPaise == null || sellPaise == null) { errorMessage = "Enter valid prices."; return }
+        val buyPaise = if (buyingPrice.trim().isEmpty()) 0.0 else (MoneyUtils.rupeesToPaise(buyingPrice)?.toDouble() ?: run { errorMessage = "Enter a valid buying price."; return })
+        val sellPaise = MoneyUtils.rupeesToPaise(sellingPrice) ?: run { errorMessage = "Enter a valid selling price."; return }
 
         isLoading = true
         errorMessage = null
@@ -144,9 +143,9 @@ class ProductsViewModel(
                     brand = brand.trim().ifEmpty { null },
                     buyingPricePaise = buyPaise.toLong(),
                     sellingPricePaise = sellPaise.toLong(),
-                    quantity = quantity.trim().toDouble(),
+                    quantity = if (quantity.trim().isEmpty()) 0.0 else quantity.trim().toDouble(),
                     unit = selectedUnit.name,
-                    minStockLevel = minStockLevel.trim().toDouble(),
+                    minStockLevel = if (minStockLevel.trim().isEmpty()) 0.0 else minStockLevel.trim().toDouble(),
                     shopId = _shopId.value,
                     createdAt = if (productId != null) {
                         productRepository.getProductById(productId)?.createdAt ?: now

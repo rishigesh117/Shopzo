@@ -189,7 +189,7 @@ fun AddEditProductScreen(
                 OutlinedTextField(
                     value = viewModel.buyingPrice,
                     onValueChange = { viewModel.buyingPrice = it; viewModel.clearError() },
-                    label = { Text("Buying Price (₹) *") },
+                    label = { Text("Buying Price (₹) (Optional)") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
@@ -214,7 +214,7 @@ fun AddEditProductScreen(
                 OutlinedTextField(
                     value = viewModel.quantity,
                     onValueChange = { viewModel.quantity = it; viewModel.clearError() },
-                    label = { Text("Quantity *") },
+                    label = { Text("Quantity (Optional)") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                     keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),

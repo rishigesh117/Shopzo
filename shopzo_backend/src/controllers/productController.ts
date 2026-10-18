@@ -26,17 +26,35 @@ export async function getProducts(req: AuthenticatedRequest, res: Response) {
       'SELECT * FROM products WHERE (shop_id = $1 OR shop_id = $2 OR shop_id = \'shop-default-001\') AND deleted = FALSE',
       [shopId, clientShopId]
     );
-    if (resProducts.rows.length === 0) {
-      return res.json({ products: getFromMemory() });
-    }
-    return res.json({ products: resProducts.rows.map(r => ({ ...r, shopId: clientShopId })) });
+    // Map DB snake_case columns to camelCase and return
+    const dbProducts = resProducts.rows.map(r => ({
+      id: r.id,
+      shopId: clientShopId,
+      categoryId: r.category_id ?? r.categoryId,
+      name: r.name,
+      brand: r.brand ?? null,
+      buyingPricePaise: r.buying_price_paise ?? r.buyingPricePaise ?? 0,
+      sellingPricePaise: r.selling_price_paise ?? r.sellingPricePaise ?? 0,
+      quantity: r.quantity ?? 0,
+      unit: r.unit ?? 'PCS',
+      minStockLevel: r.min_stock_level ?? r.minStockLevel ?? 0,
+      createdAt: r.created_at ?? r.createdAt,
+      updatedAt: r.updated_at ?? r.updatedAt,
+      deleted: r.deleted ?? false
+    }));
+    // Merge with memory products that might not be in DB yet (e.g. serverless cold start)
+    const dbIds = new Set(dbProducts.map(p => p.id));
+    const memProducts = getFromMemory().filter(p => !dbIds.has(p.id));
+    return res.json({ products: [...dbProducts, ...memProducts] });
   } catch (err) {
+    console.warn('DB error fetching products, using memory fallback:', err);
     return res.json({ products: getFromMemory() });
   }
 }
 
 export async function createProduct(req: AuthenticatedRequest, res: Response) {
   const shopId = req.shopId!;
+  const clientShopId = (req.headers['x-shop-id'] as string) || shopId;
   const { name, categoryId, brand, buyingPricePaise, sellingPricePaise, quantity, unit, minStockLevel } = req.body;
 
   if (!name || !categoryId) {
@@ -46,56 +64,81 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
   const productId = req.body.id || uuidv4();
   const now = Date.now();
 
+  // Use the canonical shopId for storage
+  const storageShopId = shopId;
+
   const product = {
     id: productId,
-    shopId,
+    shopId: storageShopId,
     categoryId,
     name: name.trim(),
     brand: brand ? brand.trim() : null,
-    buyingPricePaise: buyingPricePaise || 0,
-    sellingPricePaise: sellingPricePaise || 0,
-    quantity: quantity || 0,
+    buyingPricePaise: buyingPricePaise != null ? buyingPricePaise : 0,
+    sellingPricePaise: sellingPricePaise != null ? sellingPricePaise : 0,
+    quantity: quantity != null ? quantity : 0,
     unit: unit || 'PCS',
-    minStockLevel: minStockLevel || 0,
+    minStockLevel: minStockLevel != null ? minStockLevel : 0,
     createdAt: now,
     updatedAt: now,
     deleted: false
   };
 
+  // Always store in memory first for immediate availability in sync pull
+  memoryDb.products.set(productId, product);
+
   if (useMemoryDb) {
-    memoryDb.products.set(productId, product);
     memoryDb.saveToDisk();
-    return res.status(201).json({ product });
+    // Return product with client's shopId for consistency
+    return res.status(201).json({ product: { ...product, shopId: clientShopId } });
   }
 
   try {
+    // Ensure shop exists in DB so foreign key constraint doesn't reject product insert
+    try {
+      await pool.query(
+        `INSERT INTO shops (id, shop_code, name, owner_id, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (id) DO NOTHING`,
+        [storageShopId, 'SZ-' + (storageShopId.length >= 6 ? storageShopId.slice(-6).toUpperCase() : 'STORE1'), 'Store', req.user?.userId || 'user-default', now, now]
+      );
+    } catch (_) {}
+
     await pool.query(
       `INSERT INTO products (id, shop_id, category_id, name, brand, buying_price_paise, selling_price_paise, quantity, unit, min_stock_level, created_at, updated_at, deleted)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       ON CONFLICT (id) DO UPDATE SET
+         category_id = EXCLUDED.category_id,
+         name = EXCLUDED.name,
+         brand = EXCLUDED.brand,
+         buying_price_paise = EXCLUDED.buying_price_paise,
+         selling_price_paise = EXCLUDED.selling_price_paise,
+         quantity = EXCLUDED.quantity,
+         unit = EXCLUDED.unit,
+         min_stock_level = EXCLUDED.min_stock_level,
+         updated_at = EXCLUDED.updated_at`,
       [
         productId,
-        shopId,
+        storageShopId,
         categoryId,
         name.trim(),
         brand ? brand.trim() : null,
-        buyingPricePaise || 0,
-        sellingPricePaise || 0,
-        quantity || 0,
+        buyingPricePaise != null ? buyingPricePaise : 0,
+        sellingPricePaise != null ? sellingPricePaise : 0,
+        quantity != null ? quantity : 0,
         unit || 'PCS',
-        minStockLevel || 0,
+        minStockLevel != null ? minStockLevel : 0,
         now,
         now,
         false
       ]
     );
 
-    memoryDb.products.set(productId, product);
     memoryDb.saveToDisk();
-    return res.status(201).json({ product });
+    return res.status(201).json({ product: { ...product, shopId: clientShopId } });
   } catch (err) {
-    memoryDb.products.set(productId, product);
+    console.warn('DB error creating product, using memory fallback:', err);
     memoryDb.saveToDisk();
-    return res.status(201).json({ product });
+    return res.status(201).json({ product: { ...product, shopId: clientShopId } });
   }
 }
 
