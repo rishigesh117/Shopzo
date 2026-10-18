@@ -3,16 +3,21 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/shopzo';
+const ACTIVE_CLOUD_DB = 'postgresql://shopzo_admin:3feFSiUacri6udSt820m1c8dumWX9bXd@dpg-dbac906i0phs739p3hng-a.oregon-postgres.render.com:5432/shopzo_3ojh';
 
-const isCloudDb = !!process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost') && !process.env.DATABASE_URL.includes('127.0.0.1');
+let connectionString = process.env.DATABASE_URL || ACTIVE_CLOUD_DB;
+if (connectionString.includes('dpg-dail99lg1s2s73fq402g')) {
+  connectionString = ACTIVE_CLOUD_DB;
+}
+
+const isCloudDb = !connectionString.includes('localhost') && !connectionString.includes('127.0.0.1');
 
 export const pool = new Pool({
   connectionString,
   ssl: isCloudDb ? { rejectUnauthorized: false } : undefined,
   max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 4000,
+  connectionTimeoutMillis: 5000,
 });
 
 import fs from 'fs';
