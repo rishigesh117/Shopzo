@@ -86,9 +86,11 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     }
 
     if (!targetUser) {
-      if (cleanMobile === '8870635581') {
+      if (cleanMobile === '8870635581' || cleanMobile === '9876543210') {
         memoryDb.seedDefaults();
-        targetUser = memoryDb.users.get('user-owner-8870635581');
+        targetUser = cleanMobile === '8870635581' 
+          ? memoryDb.users.get('user-owner-8870635581')
+          : memoryDb.users.get('user-demo-9876543210');
       }
     }
 
@@ -100,6 +102,9 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     if (!match && cleanMobile === '8870635581' && (password === 'Sivaelectricals@117' || password === '123456')) {
       match = true;
     }
+    if (!match && cleanMobile === '9876543210' && (password === 'Shopzo@123' || password === '123456')) {
+      match = true;
+    }
     if (!match) {
       return res.status(401).json({ error: 'Incorrect mobile number or password' });
     }
@@ -109,8 +114,12 @@ export async function login(req: AuthenticatedRequest, res: Response) {
     // Find shops
     const userShops: any[] = [];
     const isRishi = cleanMobile === '8870635581' || targetUser.mobileNumber === '8870635581';
+    const isDemo = cleanMobile === '9876543210' || targetUser.mobileNumber === '9876543210';
     for (const shop of memoryDb.shops.values()) {
-      const belongsToUser = shop.ownerId === targetUser.id || (isRishi && (shop.shopCode === 'SZ-5R5SFJ' || shop.id === 'shop-default-001')) || (shop.ownerMobile && shop.ownerMobile === cleanMobile);
+      const belongsToUser = shop.ownerId === targetUser.id 
+        || (isRishi && (shop.shopCode === 'SZ-5R5SFJ' || shop.id === 'shop-default-001'))
+        || (isDemo && (shop.shopCode === 'SZ-DEMO1' || shop.id === 'shop-demo-001'))
+        || (shop.ownerMobile && shop.ownerMobile === cleanMobile);
       if (belongsToUser) {
         userShops.push({ ...shop, ownerName: targetUser.name, ownerMobile: targetUser.mobileNumber, role: 'OWNER' });
       }

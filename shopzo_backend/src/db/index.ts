@@ -132,6 +132,49 @@ class InMemoryDb {
       });
     }
 
+    // Demo Test User for seamless verification
+    const demoUserId = 'user-demo-9876543210';
+    const demoShopId = 'shop-demo-001';
+    const demoHash = '$2a$10$s50TJ9JPzGqbqA96QFPc0OqfYBvIt70OLRGv9kOvdS6tV3WR4OlTO'; // Shopzo@123
+
+    if (!this.users.has(demoUserId)) {
+      this.users.set(demoUserId, {
+        id: demoUserId,
+        mobileNumber: '9876543210',
+        name: 'Demo Merchant',
+        passwordHash: demoHash,
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+
+    if (!this.shops.has(demoShopId)) {
+      this.shops.set(demoShopId, {
+        id: demoShopId,
+        shopCode: 'SZ-DEMO1',
+        name: 'Demo Supermarket',
+        ownerId: demoUserId,
+        ownerName: 'Demo Merchant',
+        ownerMobile: '9876543210',
+        address: '123 Market Street',
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+
+    const demoPermKey = `${demoShopId}:${demoUserId}`;
+    if (!this.staffPermissions.has(demoPermKey)) {
+      this.staffPermissions.set(demoPermKey, {
+        id: 'perm-demo-001',
+        shopId: demoShopId,
+        userId: demoUserId,
+        role: 'OWNER',
+        permissions: ['ALL'],
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+
     const defaultCategories = [
       { id: 'cat-grocery', name: 'Grocery' },
       { id: 'cat-beverages', name: 'Beverages' },
