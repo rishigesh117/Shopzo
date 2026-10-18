@@ -1,8 +1,161 @@
 {
-  "users": [],
-  "shops": [],
-  "staffPermissions": [],
-  "categories": [],
+  "users": [
+    [
+      "user-owner-8870635581",
+      {
+        "id": "user-owner-8870635581",
+        "mobileNumber": "8870635581",
+        "name": "Rishi",
+        "passwordHash": "$2a$10$3lQyBiZSAfU5ZSFyk3TEguWuP4s6zXfex8wPu8YCFPV53LnGOdK5O",
+        "createdAt": 1792134576253,
+        "updatedAt": 1792134576253
+      }
+    ]
+  ],
+  "shops": [
+    [
+      "shop-default-001",
+      {
+        "id": "shop-default-001",
+        "shopCode": "SZ-5R5SFJ",
+        "name": "Siva electricals",
+        "ownerId": "user-owner-8870635581",
+        "ownerName": "Rishi",
+        "ownerMobile": "8870635581",
+        "address": "Main Bazaar Road",
+        "createdAt": 1792134576253,
+        "updatedAt": 1792134576253
+      }
+    ]
+  ],
+  "staffPermissions": [
+    [
+      "shop-default-001:user-owner-8870635581",
+      {
+        "id": "perm-owner-001",
+        "shopId": "shop-default-001",
+        "userId": "user-owner-8870635581",
+        "role": "OWNER",
+        "permissions": [
+          "ALL"
+        ],
+        "createdAt": 1792134576253,
+        "updatedAt": 1792134576253
+      }
+    ]
+  ],
+  "categories": [
+    [
+      "cat-grocery",
+      {
+        "id": "cat-grocery",
+        "shopId": "shop-default-001",
+        "name": "Grocery",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-beverages",
+      {
+        "id": "cat-beverages",
+        "shopId": "shop-default-001",
+        "name": "Beverages",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-snacks",
+      {
+        "id": "cat-snacks",
+        "shopId": "shop-default-001",
+        "name": "Snacks",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-dairy",
+      {
+        "id": "cat-dairy",
+        "shopId": "shop-default-001",
+        "name": "Dairy",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-personal-care",
+      {
+        "id": "cat-personal-care",
+        "shopId": "shop-default-001",
+        "name": "Personal Care",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-household",
+      {
+        "id": "cat-household",
+        "shopId": "shop-default-001",
+        "name": "Household",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-stationery",
+      {
+        "id": "cat-stationery",
+        "shopId": "shop-default-001",
+        "name": "Stationery",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-fruits-veg",
+      {
+        "id": "cat-fruits-veg",
+        "shopId": "shop-default-001",
+        "name": "Fruits & Vegetables",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-cosmetics",
+      {
+        "id": "cat-cosmetics",
+        "shopId": "shop-default-001",
+        "name": "Cosmetics",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ],
+    [
+      "cat-others",
+      {
+        "id": "cat-others",
+        "shopId": "shop-default-001",
+        "name": "Others",
+        "createdAt": 1792131657053,
+        "updatedAt": 1792131657053,
+        "deleted": false
+      }
+    ]
+  ],
   "products": [],
   "stockMovements": [],
   "customers": [],
