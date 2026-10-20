@@ -119,8 +119,8 @@ async function processDbOperation(op: SyncOperation, shopId: string) {
 
     case 'PRODUCT':
       await pool.query(
-        `INSERT INTO products (id, shop_id, category_id, name, brand, buying_price_paise, selling_price_paise, quantity, unit, min_stock_level, created_at, updated_at, deleted)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `INSERT INTO products (id, shop_id, category_id, name, brand, buying_price_paise, selling_price_paise, quantity, unit, min_stock_level, price_tiers, created_at, updated_at, deleted)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          ON CONFLICT (id) DO UPDATE SET
            category_id = EXCLUDED.category_id,
            name = EXCLUDED.name,
@@ -130,6 +130,7 @@ async function processDbOperation(op: SyncOperation, shopId: string) {
            quantity = EXCLUDED.quantity,
            unit = EXCLUDED.unit,
            min_stock_level = EXCLUDED.min_stock_level,
+           price_tiers = EXCLUDED.price_tiers,
            updated_at = EXCLUDED.updated_at,
            deleted = EXCLUDED.deleted`,
         [
@@ -143,6 +144,7 @@ async function processDbOperation(op: SyncOperation, shopId: string) {
           p.quantity || 0,
           p.unit || 'PCS',
           p.minStockLevel || 0,
+          JSON.stringify(Array.isArray(p.priceTiers) ? p.priceTiers : []),
           p.createdAt || now,
           p.updatedAt || now,
           p.deleted || false
@@ -269,7 +271,22 @@ function mapCategoryRow(r: any): any {
   return { id: r.id, shopId: r.shop_id ?? r.shopId, name: r.name, createdAt: r.created_at ?? r.createdAt, updatedAt: r.updated_at ?? r.updatedAt, deleted: r.deleted ?? false };
 }
 function mapProductRow(r: any): any {
-  return { id: r.id, shopId: r.shop_id ?? r.shopId, categoryId: r.category_id ?? r.categoryId, name: r.name, brand: r.brand ?? null, buyingPricePaise: r.buying_price_paise ?? r.buyingPricePaise ?? 0, sellingPricePaise: r.selling_price_paise ?? r.sellingPricePaise ?? 0, quantity: r.quantity ?? 0, unit: r.unit ?? 'PCS', minStockLevel: r.min_stock_level ?? r.minStockLevel ?? 0, createdAt: r.created_at ?? r.createdAt, updatedAt: r.updated_at ?? r.updatedAt, deleted: r.deleted ?? false };
+  return {
+    id: r.id,
+    shopId: r.shop_id ?? r.shopId,
+    categoryId: r.category_id ?? r.categoryId,
+    name: r.name,
+    brand: r.brand ?? null,
+    buyingPricePaise: r.buying_price_paise ?? r.buyingPricePaise ?? 0,
+    sellingPricePaise: r.selling_price_paise ?? r.sellingPricePaise ?? 0,
+    quantity: r.quantity ?? 0,
+    unit: r.unit ?? 'PCS',
+    minStockLevel: r.min_stock_level ?? r.minStockLevel ?? 0,
+    priceTiers: typeof r.price_tiers === 'string' ? JSON.parse(r.price_tiers) : (r.price_tiers ?? r.priceTiers ?? []),
+    createdAt: r.created_at ?? r.createdAt,
+    updatedAt: r.updated_at ?? r.updatedAt,
+    deleted: r.deleted ?? false
+  };
 }
 function mapStockMovementRow(r: any): any {
   return { id: r.id, shopId: r.shop_id ?? r.shopId, productId: r.product_id ?? r.productId, type: r.type, quantity: r.quantity ?? 0, reason: r.reason ?? null, createdAt: r.created_at ?? r.createdAt };

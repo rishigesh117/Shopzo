@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS products (
     quantity NUMERIC(12, 3) NOT NULL DEFAULT 0,
     unit VARCHAR(20) NOT NULL DEFAULT 'PCS',
     min_stock_level NUMERIC(12, 3) NOT NULL DEFAULT 0,
+    price_tiers JSONB DEFAULT '[]'::jsonb,
     created_at BIGINT NOT NULL,
     updated_at BIGINT NOT NULL,
     deleted BOOLEAN NOT NULL DEFAULT FALSE

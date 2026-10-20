@@ -9,7 +9,7 @@ import {
   Printer
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { Product, CartItem, Bill } from '../types';
+import { Product, CartItem, Bill, PriceTier } from '../types';
 import { formatMoney } from '../utils/format';
 
 interface BillingPageProps {
@@ -34,6 +34,11 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
   const [customPaidAmount, setCustomPaidAmount] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Helper for cart item unique key (product + optional tier)
+  const getCartItemKey = (item: CartItem): string => {
+    return item.selectedTier ? `${item.product.id}__tier_${item.selectedTier.id}` : item.product.id;
+  };
+
   // Filter products
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -46,16 +51,15 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
   }, [products, search, selectedCategory]);
 
   // Cart operations
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, tier?: PriceTier) => {
+    const targetKey = tier ? `${product.id}__tier_${tier.id}` : product.id;
+    const pricePaise = tier ? tier.pricePaise : product.sellingPricePaise;
+
     setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
+      const existing = prev.find((item) => getCartItemKey(item) === targetKey);
       if (existing) {
-        if (existing.quantity >= product.quantity) {
-          alert(`Cannot add more than available stock (${product.quantity} ${product.unit})`);
-          return prev;
-        }
         return prev.map((item) =>
-          item.product.id === product.id
+          getCartItemKey(item) === targetKey
             ? {
                 ...item,
                 quantity: item.quantity + 1,
@@ -73,25 +77,22 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
           {
             product,
             quantity: 1,
-            unitPricePaise: product.sellingPricePaise,
-            subtotalPaise: product.sellingPricePaise,
+            unitPricePaise: pricePaise,
+            subtotalPaise: pricePaise,
+            selectedTier: tier,
           },
         ];
       }
     });
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = (key: string, delta: number) => {
     setCart((prev) =>
       prev
         .map((item) => {
-          if (item.product.id === productId) {
+          if (getCartItemKey(item) === key) {
             const newQty = item.quantity + delta;
             if (newQty <= 0) return null;
-            if (newQty > item.product.quantity) {
-              alert(`Maximum available stock is ${item.product.quantity} ${item.product.unit}`);
-              return item;
-            }
             return {
               ...item,
               quantity: newQty,
@@ -104,8 +105,8 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
     );
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((i) => i.product.id !== productId));
+  const removeFromCart = (key: string) => {
+    setCart((prev) => prev.filter((i) => getCartItemKey(i) !== key));
   };
 
   const clearCart = () => {
@@ -165,9 +166,33 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
 
     setIsSubmitting(true);
     try {
+      const itemsPayload = cart.map((i) => {
+        let stockDeductionQty = i.quantity;
+        if (i.selectedTier) {
+          const tierUnit = (i.selectedTier.unit || '').toUpperCase();
+          const prodUnit = (i.product.unit || '').toUpperCase();
+          if (prodUnit === 'KG' && tierUnit === 'GRAM') {
+            stockDeductionQty = (i.selectedTier.quantity / 1000) * i.quantity;
+          } else if (prodUnit === 'LITRE' && tierUnit === 'ML') {
+            stockDeductionQty = (i.selectedTier.quantity / 1000) * i.quantity;
+          } else if (prodUnit === tierUnit) {
+            stockDeductionQty = i.selectedTier.quantity * i.quantity;
+          }
+        }
+
+        return {
+          product: i.product,
+          quantity: i.quantity,
+          unitPricePaise: i.unitPricePaise,
+          tierName: i.selectedTier ? `${i.selectedTier.name} (${i.selectedTier.quantity} ${i.selectedTier.unit})` : undefined,
+          unit: i.selectedTier ? i.selectedTier.unit : i.product.unit,
+          stockDeductionQty,
+        };
+      });
+
       const bill = await createBill(
         { id: custId, name: custName, mobileNumber: custMobile },
-        cart.map((i) => ({ product: i.product, quantity: i.quantity })),
+        itemsPayload,
         {
           method: paymentMethod,
           paidAmountPaise,
@@ -237,7 +262,9 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
             }}
           >
             {filteredProducts.map((p) => {
-              const inCart = cart.find((i) => i.product.id === p.id);
+              const inCartCount = cart
+                .filter((i) => i.product.id === p.id)
+                .reduce((sum, i) => sum + i.quantity, 0);
               const isOut = p.quantity <= 0;
               return (
                 <div
@@ -248,21 +275,67 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
                     padding: '14px',
                     cursor: isOut ? 'not-allowed' : 'pointer',
                     opacity: isOut ? 0.6 : 1,
-                    border: inCart ? '2px solid var(--primary)' : '1px solid var(--surface-border)',
+                    border: inCartCount > 0 ? '2px solid var(--primary)' : '1px solid var(--surface-border)',
                     position: 'relative',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    minHeight: '135px',
+                    minHeight: '145px',
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.3 }}>
-                      {p.name}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px' }}>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.3 }}>
+                        {p.name}
+                      </div>
+                      {p.priceTiers && p.priceTiers.length > 0 && (
+                        <span
+                          className="badge badge-primary"
+                          style={{ fontSize: '0.65rem', padding: '1px 5px', whiteSpace: 'nowrap' }}
+                        >
+                          Tiered
+                        </span>
+                      )}
                     </div>
                     {p.brand && (
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                         {p.brand}
+                      </div>
+                    )}
+
+                    {/* Quick Select Price Tiers (Slabs) */}
+                    {p.priceTiers && p.priceTiers.length > 0 && (
+                      <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {p.priceTiers.map((tier) => (
+                          <button
+                            key={tier.id}
+                            type="button"
+                            disabled={isOut}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isOut) addToCart(p, tier);
+                            }}
+                            className="btn btn-sm"
+                            style={{
+                              padding: '2px 7px',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              border: '1px solid var(--primary)',
+                              color: 'var(--primary)',
+                              borderRadius: 'var(--radius-sm)',
+                              background: 'rgba(99, 102, 241, 0.08)',
+                              cursor: isOut ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                            }}
+                            title={`Add ${tier.name}: ${tier.quantity} ${tier.unit} for ${formatMoney(tier.pricePaise)}`}
+                          >
+                            <span>{tier.quantity} {tier.unit}</span>
+                            <span style={{ opacity: 0.6 }}>•</span>
+                            <span>{formatMoney(tier.pricePaise)}</span>
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -276,14 +349,15 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
                         {isOut ? 'Out of Stock' : `Stock: ${p.quantity} ${p.unit}`}
                       </div>
                     </div>
-                    {inCart && (
+                    {inCartCount > 0 && (
                       <span
                         style={{
                           background: 'var(--primary)',
                           color: 'white',
                           borderRadius: 'var(--radius-full)',
-                          width: '24px',
+                          minWidth: '24px',
                           height: '24px',
+                          padding: '0 6px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -291,7 +365,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
                           fontWeight: 700,
                         }}
                       >
-                        {inCart.quantity}
+                        {inCartCount}
                       </span>
                     )}
                   </div>
@@ -393,59 +467,72 @@ export const BillingPage: React.FC<BillingPageProps> = ({ onOpenAddCustomer, onB
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {cart.map((item) => (
-                  <div
-                    key={item.product.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 10px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--surface-raised)',
-                    }}
-                  >
-                    <div style={{ minWidth: 0, flex: 1, marginRight: '8px' }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.product.name}
+                {cart.map((item) => {
+                  const itemKey = getCartItemKey(item);
+                  return (
+                    <div
+                      key={itemKey}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 10px',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--surface-raised)',
+                      }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1, marginRight: '8px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.product.name}
+                          </span>
+                          {item.selectedTier && (
+                            <span
+                              className="badge badge-primary"
+                              style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}
+                            >
+                              {item.selectedTier.name} ({item.selectedTier.quantity} {item.selectedTier.unit})
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          {formatMoney(item.unitPricePaise)} {item.selectedTier ? `per ${item.selectedTier.quantity} ${item.selectedTier.unit}` : `/ ${item.product.unit}`}
+                        </div>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {formatMoney(item.unitPricePaise)} / {item.product.unit}
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-sm)', background: 'var(--surface)' }}>
+                          <button
+                            onClick={() => updateQuantity(itemKey, -1)}
+                            style={{ padding: '4px 6px', color: 'var(--text-main)' }}
+                          >
+                            <Minus size={13} />
+                          </button>
+                          <span style={{ padding: '0 6px', fontSize: '0.82rem', fontWeight: 700 }}>
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(itemKey, 1)}
+                            style={{ padding: '4px 6px', color: 'var(--text-main)' }}
+                          >
+                            <Plus size={13} />
+                          </button>
+                        </div>
+
+                        <div style={{ fontWeight: 800, fontSize: '0.9rem', minWidth: '60px', textAlign: 'right' }}>
+                          {formatMoney(item.subtotalPaise)}
+                        </div>
+
+                        <button
+                          onClick={() => removeFromCart(itemKey)}
+                          style={{ color: 'var(--danger)', padding: '2px' }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--surface-border)', borderRadius: 'var(--radius-sm)', background: 'var(--surface)' }}>
-                        <button
-                          onClick={() => updateQuantity(item.product.id, -1)}
-                          style={{ padding: '4px 6px', color: 'var(--text-main)' }}
-                        >
-                          <Minus size={13} />
-                        </button>
-                        <span style={{ padding: '0 6px', fontSize: '0.82rem', fontWeight: 700 }}>
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.product.id, 1)}
-                          style={{ padding: '4px 6px', color: 'var(--text-main)' }}
-                        >
-                          <Plus size={13} />
-                        </button>
-                      </div>
-
-                      <div style={{ fontWeight: 800, fontSize: '0.9rem', minWidth: '60px', textAlign: 'right' }}>
-                        {formatMoney(item.subtotalPaise)}
-                      </div>
-
-                      <button
-                        onClick={() => removeFromCart(item.product.id)}
-                        style={{ color: 'var(--danger)', padding: '2px' }}
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

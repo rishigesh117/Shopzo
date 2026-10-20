@@ -38,6 +38,7 @@ export async function getProducts(req: AuthenticatedRequest, res: Response) {
       quantity: r.quantity ?? 0,
       unit: r.unit ?? 'PCS',
       minStockLevel: r.min_stock_level ?? r.minStockLevel ?? 0,
+      priceTiers: typeof r.price_tiers === 'string' ? JSON.parse(r.price_tiers) : (r.price_tiers ?? r.priceTiers ?? []),
       createdAt: r.created_at ?? r.createdAt,
       updatedAt: r.updated_at ?? r.updatedAt,
       deleted: r.deleted ?? false
@@ -55,7 +56,7 @@ export async function getProducts(req: AuthenticatedRequest, res: Response) {
 export async function createProduct(req: AuthenticatedRequest, res: Response) {
   const shopId = req.shopId!;
   const clientShopId = (req.headers['x-shop-id'] as string) || shopId;
-  const { name, categoryId, brand, buyingPricePaise, sellingPricePaise, quantity, unit, minStockLevel } = req.body;
+  const { name, categoryId, brand, buyingPricePaise, sellingPricePaise, quantity, unit, minStockLevel, priceTiers } = req.body;
 
   if (!name || !categoryId) {
     return res.status(400).json({ error: 'Product name and categoryId are required' });
@@ -66,6 +67,7 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
 
   // Use the canonical shopId for storage
   const storageShopId = shopId;
+  const normalizedPriceTiers = Array.isArray(priceTiers) ? priceTiers : [];
 
   const product = {
     id: productId,
@@ -78,6 +80,7 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
     quantity: quantity != null ? quantity : 0,
     unit: unit || 'PCS',
     minStockLevel: minStockLevel != null ? minStockLevel : 0,
+    priceTiers: normalizedPriceTiers,
     createdAt: now,
     updatedAt: now,
     deleted: false
@@ -104,8 +107,8 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
     } catch (_) {}
 
     await pool.query(
-      `INSERT INTO products (id, shop_id, category_id, name, brand, buying_price_paise, selling_price_paise, quantity, unit, min_stock_level, created_at, updated_at, deleted)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      `INSERT INTO products (id, shop_id, category_id, name, brand, buying_price_paise, selling_price_paise, quantity, unit, min_stock_level, price_tiers, created_at, updated_at, deleted)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        ON CONFLICT (id) DO UPDATE SET
          category_id = EXCLUDED.category_id,
          name = EXCLUDED.name,
@@ -115,6 +118,7 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
          quantity = EXCLUDED.quantity,
          unit = EXCLUDED.unit,
          min_stock_level = EXCLUDED.min_stock_level,
+         price_tiers = EXCLUDED.price_tiers,
          updated_at = EXCLUDED.updated_at`,
       [
         productId,
@@ -127,6 +131,7 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
         quantity != null ? quantity : 0,
         unit || 'PCS',
         minStockLevel != null ? minStockLevel : 0,
+        JSON.stringify(normalizedPriceTiers),
         now,
         now,
         false
@@ -145,7 +150,7 @@ export async function createProduct(req: AuthenticatedRequest, res: Response) {
 export async function updateProduct(req: AuthenticatedRequest, res: Response) {
   const shopId = req.shopId!;
   const productId = req.params.productId;
-  const { name, categoryId, brand, buyingPricePaise, sellingPricePaise, quantity, unit, minStockLevel } = req.body;
+  const { name, categoryId, brand, buyingPricePaise, sellingPricePaise, quantity, unit, minStockLevel, priceTiers } = req.body;
 
   const now = Date.now();
 
@@ -165,6 +170,7 @@ export async function updateProduct(req: AuthenticatedRequest, res: Response) {
       quantity: quantity !== undefined ? quantity : existing.quantity,
       unit: unit !== undefined ? unit : existing.unit,
       minStockLevel: minStockLevel !== undefined ? minStockLevel : existing.minStockLevel,
+      priceTiers: priceTiers !== undefined ? (Array.isArray(priceTiers) ? priceTiers : []) : (existing.priceTiers || []),
       updatedAt: now
     };
     memoryDb.products.set(productId, updated);
@@ -179,6 +185,9 @@ export async function updateProduct(req: AuthenticatedRequest, res: Response) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
+    const existingRow = checkRes.rows[0];
+    const tiersJson = priceTiers !== undefined ? JSON.stringify(priceTiers) : existingRow.price_tiers;
+
     await pool.query(
       `UPDATE products SET
          name = COALESCE($1, name),
@@ -189,9 +198,10 @@ export async function updateProduct(req: AuthenticatedRequest, res: Response) {
          quantity = COALESCE($6, quantity),
          unit = COALESCE($7, unit),
          min_stock_level = COALESCE($8, min_stock_level),
-         updated_at = $9
-       WHERE id = $10 AND shop_id = $11`,
-      [name, categoryId, brand, buyingPricePaise, sellingPricePaise, quantity, unit, minStockLevel, now, productId, shopId]
+         price_tiers = $9,
+         updated_at = $10
+       WHERE id = $11 AND shop_id = $12`,
+      [name, categoryId, brand, buyingPricePaise, sellingPricePaise, quantity, unit, minStockLevel, tiersJson, now, productId, shopId]
     );
 
     const existing = memoryDb.products.get(productId) || {};

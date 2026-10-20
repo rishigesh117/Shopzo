@@ -145,8 +145,20 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({ onOpenAddProduct, on
               return (
                 <tr key={p.id}>
                   <td>
-                    <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{p.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--text-main)' }}>{p.name}</div>
+                      {p.priceTiers && p.priceTiers.length > 0 && (
+                        <span className="badge badge-primary" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                          {p.priceTiers.length} Tiers
+                        </span>
+                      )}
+                    </div>
                     {p.brand && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{p.brand}</div>}
+                    {p.priceTiers && p.priceTiers.length > 0 && (
+                      <div style={{ fontSize: '0.72rem', color: 'var(--primary)', marginTop: '2px', fontWeight: 600 }}>
+                        {p.priceTiers.map(t => `${t.quantity} ${t.unit}: ${formatMoney(t.pricePaise)}`).join(' • ')}
+                      </div>
+                    )}
                   </td>
                   <td>
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>

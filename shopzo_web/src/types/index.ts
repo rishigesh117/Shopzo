@@ -29,6 +29,15 @@ export interface Category {
   deleted?: boolean;
 }
 
+export interface PriceTier {
+  id?: string;
+  name: string; // e.g. "100g", "250g", "500g", "1 Kg", "5 Kg"
+  quantity: number; // e.g. 100, 250, 500, 1
+  unit: string; // "GRAM", "KG", "ML", "LITRE", "PIECE", etc.
+  pricePaise: number; // Selling price in paise (e.g. 1500 for ₹15.00)
+  buyingPricePaise?: number; // Optional buying price
+}
+
 export interface Product {
   id: string;
   shopId: string;
@@ -40,6 +49,7 @@ export interface Product {
   quantity: number;
   unit: string;
   minStockLevel: number;
+  priceTiers?: PriceTier[];
   createdAt: number;
   updatedAt?: number;
   deleted?: boolean;
@@ -72,6 +82,7 @@ export interface BillItem {
   buyingPricePaise: number;
   subtotalPaise: number;
   total?: number;
+  tierName?: string;
 }
 
 export interface Bill {
@@ -132,4 +143,5 @@ export interface CartItem {
   quantity: number;
   unitPricePaise: number;
   subtotalPaise: number;
+  selectedTier?: PriceTier;
 }

@@ -31,7 +31,7 @@ import com.shopzo.app.core.database.entity.*
         ReturnEntity::class,
         SyncQueueEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class ShopzoDatabase : RoomDatabase() {
@@ -185,6 +185,12 @@ abstract class ShopzoDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `products` ADD COLUMN `priceTiers` TEXT NOT NULL DEFAULT '[]'")
+            }
+        }
+
         fun getInstance(context: Context): ShopzoDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -192,7 +198,7 @@ abstract class ShopzoDatabase : RoomDatabase() {
                     ShopzoDatabase::class.java,
                     "shopzo_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
                 INSTANCE = instance
                 instance

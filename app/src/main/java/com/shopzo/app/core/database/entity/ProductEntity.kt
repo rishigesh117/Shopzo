@@ -25,7 +25,8 @@ data class ProductEntity(
     val minStockLevel: Double,         // minimum stock threshold
     val shopId: String,                // references ShopEntity.id
     val createdAt: Long,               // epoch millis
-    val updatedAt: Long                // epoch millis
+    val updatedAt: Long,               // epoch millis
+    val priceTiers: String = "[]"      // JSON serialized list of PriceTier
 )
 
 val ProductEntity.stockQuantity: Double get() = quantity

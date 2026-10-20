@@ -143,6 +143,7 @@ data class ProductDto(
     val quantity: Double,
     val unit: String,
     val minStockLevel: Double,
+    val priceTiers: kotlinx.serialization.json.JsonElement? = null,
     val createdAt: Long,
     val updatedAt: Long,
     val deleted: Boolean = false

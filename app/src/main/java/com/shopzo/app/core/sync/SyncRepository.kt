@@ -107,7 +107,8 @@ class SyncRepository(
                         minStockLevel = p.minStockLevel,
                         shopId = shopId,
                         createdAt = p.createdAt,
-                        updatedAt = p.updatedAt
+                        updatedAt = p.updatedAt,
+                        priceTiers = p.priceTiers?.toString() ?: "[]"
                     )
                     database.productDao().insert(entity)
                 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -260,6 +261,159 @@ fun AddEditProductScreen(
                 shape = MaterialTheme.shapes.medium,
                 supportingText = { Text("Alert when quantity drops below this level") }
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Tier Product Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Tier Product (Multi-Unit Slabs)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Sell in multiple quantities (e.g. 100g, 250g, 1kg)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = viewModel.isTierProduct,
+                            onCheckedChange = { isChecked ->
+                                viewModel.isTierProduct = isChecked
+                                if (isChecked && viewModel.priceTiers.isEmpty()) {
+                                    viewModel.applyTierPresetsForUnit(viewModel.selectedUnit)
+                                }
+                            }
+                        )
+                    }
+
+                    if (viewModel.isTierProduct) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Configured Price Slabs",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            FilledTonalButton(
+                                onClick = { viewModel.applyTierPresetsForUnit(viewModel.selectedUnit) },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("Load Presets", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        viewModel.priceTiers.forEachIndexed { index, tier ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                shape = MaterialTheme.shapes.small,
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface
+                                )
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        OutlinedTextField(
+                                            value = tier.name,
+                                            onValueChange = { tier.name = it },
+                                            label = { Text("Label") },
+                                            singleLine = true,
+                                            modifier = Modifier.weight(1.2f)
+                                        )
+                                        OutlinedTextField(
+                                            value = tier.quantity,
+                                            onValueChange = { tier.quantity = it },
+                                            label = { Text("Qty") },
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                            modifier = Modifier.weight(0.8f)
+                                        )
+                                        OutlinedTextField(
+                                            value = tier.unit,
+                                            onValueChange = { tier.unit = it },
+                                            label = { Text("Unit") },
+                                            singleLine = true,
+                                            modifier = Modifier.weight(0.9f)
+                                        )
+                                        IconButton(
+                                            onClick = { viewModel.removeTier(index) },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "Delete Slab",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        OutlinedTextField(
+                                            value = tier.price,
+                                            onValueChange = { tier.price = it },
+                                            label = { Text("Selling Price (₹) *") },
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        OutlinedTextField(
+                                            value = tier.buyingPrice,
+                                            onValueChange = { tier.buyingPrice = it },
+                                            label = { Text("Cost Price (₹)") },
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = {
+                                val defaultUnit = if (viewModel.selectedUnit == ProductUnit.KG) "GRAM" else if (viewModel.selectedUnit == ProductUnit.LITRE) "ML" else viewModel.selectedUnit.name
+                                viewModel.addTier(name = "", quantity = "1", unit = defaultUnit, price = "")
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("+ Add Another Slab")
+                        }
+                    }
+                }
+            }
 
             AnimatedVisibility(visible = viewModel.errorMessage != null) {
                 Text(

@@ -1,6 +1,7 @@
 package com.shopzo.app.features.products.ui
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -8,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.shopzo.app.core.database.entity.CategoryEntity
 import com.shopzo.app.core.database.entity.ProductEntity
+import com.shopzo.app.core.model.PriceTier
 import com.shopzo.app.core.model.ProductUnit
 import com.shopzo.app.core.model.StockStatus
 import com.shopzo.app.core.security.SessionManager
@@ -17,7 +19,18 @@ import com.shopzo.app.core.utils.ValidationUtils
 import com.shopzo.app.features.products.data.ProductRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.UUID
+
+data class PriceTierDraft(
+    val id: String = UUID.randomUUID().toString(),
+    var name: String = "",
+    var quantity: String = "1",
+    var unit: String = "KG",
+    var price: String = "",
+    var buyingPrice: String = ""
+)
 
 class ProductsViewModel(
     private val productRepository: ProductRepository,
@@ -71,10 +84,48 @@ class ProductsViewModel(
     var quantity by mutableStateOf("")
     var selectedUnit by mutableStateOf(ProductUnit.PIECE)
     var minStockLevel by mutableStateOf("")
+    var isTierProduct by mutableStateOf(false)
+    val priceTiers = mutableStateListOf<PriceTierDraft>()
     var isLoading by mutableStateOf(false)
         private set
     var errorMessage by mutableStateOf<String?>(null)
         private set
+
+    fun addTier(name: String = "", quantity: String = "1", unit: String = "KG", price: String = "") {
+        priceTiers.add(PriceTierDraft(name = name, quantity = quantity, unit = unit, price = price))
+    }
+
+    fun removeTier(index: Int) {
+        if (index in priceTiers.indices) {
+            priceTiers.removeAt(index)
+        }
+    }
+
+    fun applyTierPresetsForUnit(unit: ProductUnit) {
+        priceTiers.clear()
+        when (unit) {
+            ProductUnit.KG -> {
+                priceTiers.add(PriceTierDraft(name = "100 Grams", quantity = "100", unit = "GRAM"))
+                priceTiers.add(PriceTierDraft(name = "250 Grams", quantity = "250", unit = "GRAM"))
+                priceTiers.add(PriceTierDraft(name = "500 Grams", quantity = "500", unit = "GRAM"))
+                priceTiers.add(PriceTierDraft(name = "1 Kg", quantity = "1", unit = "KG"))
+            }
+            ProductUnit.LITRE -> {
+                priceTiers.add(PriceTierDraft(name = "100 ml", quantity = "100", unit = "ML"))
+                priceTiers.add(PriceTierDraft(name = "250 ml", quantity = "250", unit = "ML"))
+                priceTiers.add(PriceTierDraft(name = "500 ml", quantity = "500", unit = "ML"))
+                priceTiers.add(PriceTierDraft(name = "1 Litre", quantity = "1", unit = "LITRE"))
+            }
+            ProductUnit.PIECE -> {
+                priceTiers.add(PriceTierDraft(name = "1 Piece", quantity = "1", unit = "PIECE"))
+                priceTiers.add(PriceTierDraft(name = "Half Dozen", quantity = "6", unit = "PIECE"))
+                priceTiers.add(PriceTierDraft(name = "1 Dozen", quantity = "12", unit = "PIECE"))
+            }
+            else -> {
+                priceTiers.add(PriceTierDraft(name = "Standard Pack", quantity = "1", unit = unit.name))
+            }
+        }
+    }
 
     // Category management
     var newCategoryName by mutableStateOf("")
@@ -111,6 +162,30 @@ class ProductsViewModel(
                 quantity = product.quantity.toString()
                 selectedUnit = try { ProductUnit.valueOf(product.unit) } catch (_: Exception) { ProductUnit.PIECE }
                 minStockLevel = product.minStockLevel.toString()
+
+                priceTiers.clear()
+                if (product.priceTiers.isNotBlank() && product.priceTiers != "[]") {
+                    try {
+                        val parsed = Json.decodeFromString<List<PriceTier>>(product.priceTiers)
+                        parsed.forEach { t ->
+                            priceTiers.add(
+                                PriceTierDraft(
+                                    id = t.id,
+                                    name = t.name,
+                                    quantity = if (t.quantity % 1.0 == 0.0) t.quantity.toInt().toString() else t.quantity.toString(),
+                                    unit = t.unit,
+                                    price = MoneyUtils.paiseToDecimalString(t.pricePaise),
+                                    buyingPrice = if (t.buyingPricePaise > 0) MoneyUtils.paiseToDecimalString(t.buyingPricePaise) else ""
+                                )
+                            )
+                        }
+                        isTierProduct = priceTiers.isNotEmpty()
+                    } catch (_: Exception) {
+                        isTierProduct = false
+                    }
+                } else {
+                    isTierProduct = false
+                }
             }
         }
     }
@@ -131,6 +206,22 @@ class ProductsViewModel(
         val buyPaise = if (buyingPrice.trim().isEmpty()) 0.0 else (MoneyUtils.rupeesToPaise(buyingPrice)?.toDouble() ?: run { errorMessage = "Enter a valid buying price."; return })
         val sellPaise = MoneyUtils.rupeesToPaise(sellingPrice) ?: run { errorMessage = "Enter a valid selling price."; return }
 
+        val tiersJson = if (isTierProduct && priceTiers.isNotEmpty()) {
+            val tierModels = priceTiers.filter { it.price.isNotBlank() }.map { draft ->
+                val pPaise = MoneyUtils.rupeesToPaise(draft.price)?.toLong() ?: 0L
+                val bPaise = if (draft.buyingPrice.isNotBlank()) MoneyUtils.rupeesToPaise(draft.buyingPrice)?.toLong() ?: 0L else 0L
+                PriceTier(
+                    id = draft.id,
+                    name = draft.name.ifBlank { "${draft.quantity} ${draft.unit}" },
+                    quantity = draft.quantity.toDoubleOrNull() ?: 1.0,
+                    unit = draft.unit,
+                    pricePaise = pPaise,
+                    buyingPricePaise = bPaise
+                )
+            }
+            Json.encodeToString(tierModels)
+        } else "[]"
+
         isLoading = true
         errorMessage = null
         viewModelScope.launch {
@@ -146,6 +237,7 @@ class ProductsViewModel(
                     quantity = if (quantity.trim().isEmpty()) 0.0 else quantity.trim().toDouble(),
                     unit = selectedUnit.name,
                     minStockLevel = if (minStockLevel.trim().isEmpty()) 0.0 else minStockLevel.trim().toDouble(),
+                    priceTiers = tiersJson,
                     shopId = _shopId.value,
                     createdAt = if (productId != null) {
                         productRepository.getProductById(productId)?.createdAt ?: now
@@ -246,6 +338,7 @@ class ProductsViewModel(
         productName = ""; selectedCategoryId = ""; brand = ""
         buyingPrice = ""; sellingPrice = ""; quantity = ""
         selectedUnit = ProductUnit.PIECE; minStockLevel = ""
+        isTierProduct = false; priceTiers.clear()
     }
 
     fun clearError() { errorMessage = null }

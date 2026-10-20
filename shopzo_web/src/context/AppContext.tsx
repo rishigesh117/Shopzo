@@ -33,7 +33,14 @@ interface AppContextType {
   createCustomer: (name: string, mobileNumber: string, address?: string) => Promise<Customer>;
   createBill: (
     customerInfo: { id?: string; name: string; mobileNumber: string },
-    items: { product: Product; quantity: number }[],
+    items: {
+      product: Product;
+      quantity: number;
+      unitPricePaise?: number;
+      tierName?: string;
+      unit?: string;
+      stockDeductionQty?: number;
+    }[],
     paymentInfo: { method: 'CASH' | 'UPI' | 'CARD' | 'CREDIT'; paidAmountPaise: number; receivedAmountPaise?: number; changeReturnedPaise?: number }
   ) => Promise<Bill>;
   recordCustomerPayment: (customerId: string, amountPaise: number, paymentMethod: 'CASH' | 'UPI' | 'CARD') => Promise<void>;
@@ -248,7 +255,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // --- POS Billing ---
   const createBill = async (
     customerInfo: { id?: string; name: string; mobileNumber: string },
-    items: { product: Product; quantity: number }[],
+    items: {
+      product: Product;
+      quantity: number;
+      unitPricePaise?: number;
+      tierName?: string;
+      unit?: string;
+      stockDeductionQty?: number;
+    }[],
     paymentInfo: { method: 'CASH' | 'UPI' | 'CARD' | 'CREDIT'; paidAmountPaise: number; receivedAmountPaise?: number; changeReturnedPaise?: number }
   ): Promise<Bill> => {
     if (!currentShop) throw new Error('No active shop selected');
@@ -261,19 +275,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     let subtotalPaise = 0;
     const billItems: BillItem[] = items.map((item) => {
-      const lineSubtotal = Math.round(item.product.sellingPricePaise * item.quantity);
+      const unitPrice = item.unitPricePaise !== undefined ? item.unitPricePaise : item.product.sellingPricePaise;
+      const lineSubtotal = Math.round(unitPrice * item.quantity);
       subtotalPaise += lineSubtotal;
       return {
         id: uuid(),
         shopId: currentShop.id,
         billId: billId,
         productId: item.product.id,
-        productNameSnapshot: item.product.name,
+        productNameSnapshot: item.tierName ? `${item.product.name} (${item.tierName})` : item.product.name,
         quantity: item.quantity,
-        unit: item.product.unit,
-        sellingPricePaise: item.product.sellingPricePaise,
+        unit: item.unit || item.product.unit,
+        sellingPricePaise: unitPrice,
         buyingPricePaise: item.product.buyingPricePaise,
         subtotalPaise: lineSubtotal,
+        tierName: item.tierName,
       };
     });
 
@@ -387,12 +403,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       await api.pushSync(currentShop.id, operations);
       setBills((prev) => [newBill, ...prev]);
 
-      // Deduct sold quantities from local state
+      // Deduct sold quantities from local state (summing all tiers/items for each product)
       setProducts((prev) =>
         prev.map((p) => {
-          const item = items.find((i) => i.product.id === p.id);
-          if (item) {
-            return { ...p, quantity: Math.max(0, p.quantity - item.quantity) };
+          const matchingItems = items.filter((i) => i.product.id === p.id);
+          if (matchingItems.length > 0) {
+            const totalDeducted = matchingItems.reduce((sum, i) => {
+              const ded = i.stockDeductionQty !== undefined ? i.stockDeductionQty : i.quantity;
+              return sum + ded;
+            }, 0);
+            return { ...p, quantity: Math.max(0, p.quantity - totalDeducted) };
           }
           return p;
         })
